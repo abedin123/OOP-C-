@@ -1,0 +1,158 @@
+#include<iostream>
+using namespace std;
+
+template<class T1, class T2, int max>
+class FITKolekcija
+{
+	int* _trenutno;
+	T1 _elementi1[max];
+	T2* _elementi2[max];
+public:
+	FITKolekcija()
+	{
+		for (int i = 0; i < max; i++)
+		{
+			_elementi2[i] = nullptr;
+		}
+		_trenutno = new int(0);
+	}
+	~FITKolekcija()
+	{
+		delete _trenutno; _trenutno = nullptr;
+		for (int i = 0; i < max; i++)
+		{
+			if (_elementi2[i] != nullptr)
+			{
+				delete _elementi2[i];
+				_elementi2[i] = nullptr;
+			}
+		}
+	}
+	FITKolekcija(const FITKolekcija<T1, T2, max>&fit)
+	{
+		_trenutno = new int(*fit._trenutno);
+		for (int i = 0; i < max; i++)
+		{
+			_elementi1[i] = fit._elementi1[i];
+			_elementi2[i] = new T2(*fit._elementi2[i]);
+		}
+	}
+	bool operator()(T1 t, T2 t1)
+	{
+		for (int i = 0; i < *_trenutno; i++)
+		{
+			if (_elementi1[i] == t || *_elementi2[i] == t1)
+			{
+				cout << "Ne mozete dodati isti element." << endl;
+				return false;
+			}
+		}
+		_elementi1[*_trenutno] = t;
+		_elementi2[*_trenutno] = new T2(t1);
+		_trenutno = new int(*_trenutno + 1);
+	}
+	T1 operator[](int lok) {
+		return _elementi1[lok];
+	}
+	int GetTr()const {
+		return *_trenutno;
+	}
+	void operator-=(int red)
+	{
+		int j = 0;
+		T2 *temp[max];
+		for (int i = 0; i < *_trenutno; i++)
+		{
+			if (*_elementi2[i] != red)
+			{
+				_elementi1[j] = _elementi1[i];
+				temp[j] = new T2(*_elementi2[i]);
+				j++;
+			}
+		}
+		for (int i = 0; i < *_trenutno; i++)
+		{
+			delete _elementi2[i]; _elementi2[i] = nullptr;
+		}
+		for (int i = 0; i < *_trenutno-1; i++)
+		{
+			_elementi2[i] = new T2(*temp[i]);
+		}
+		_trenutno = new int(*_trenutno - 1);
+	}
+	friend ostream& operator<<<>(ostream&cout, FITKolekcija<T1, T2, max>&fit);
+};
+template<class T1, class T2, int max>
+ostream& operator<<<>(ostream&cout, FITKolekcija<T1, T2, max>&fit)
+{
+	for (int i = 0; i < *fit._trenutno; i++)
+	{
+		cout << fit._elementi1[i] << endl;
+		cout << *fit._elementi2[i] << endl;
+	}
+	return cout;
+}
+class Anketa
+{
+	char* _pitanje;
+	int _trajanje; //izraženo u danima
+	//Kolekcija treba da pohrani moguce odgovore na pitanja, sa pripadajucim rednim brojem
+	FITKolekcija<char*, int, 8> _odgovori;
+public:
+	Anketa(const char*pitanje, int trajanje) {
+		int size = strlen(pitanje) + 1;
+		_pitanje = new char[size];
+		strcpy_s(_pitanje, size, pitanje);
+		_trajanje = trajanje;
+	}
+	~Anketa()
+	{
+		delete[]_pitanje; _pitanje = nullptr;
+	}
+	bool DodajOdgovor(const char*odg,int tr)
+	{
+		char*temp = new char[strlen(odg) + 1];
+		strcpy_s(temp, strlen(odg) + 1, odg);
+		for (int i = 0; i < _odgovori.GetTr(); i++)
+		{
+			if (strcmp(_odgovori[i], odg) == 0)
+			{
+				cout << "Ne mozete dodati isti odgovor." << endl;
+				return false;
+			}
+		}
+		_odgovori(temp, tr);
+	}
+	void UkloniOdgovor(int red)
+	{
+		_odgovori -= (red);
+	}
+	void operator++(int tr) {
+		_trajanje++;
+	}
+	void operator++() {
+		_trajanje++;
+	}
+	friend ostream& operator<<(ostream&cout, Anketa &a);
+};
+ostream& operator<<(ostream&cout, Anketa &a) {
+	cout << "Pitanje je:" << a._pitanje << endl;
+	cout << "Dodati odg su:" << a._odgovori << endl;
+	cout << "Trajanje:" << a._trajanje << endl;
+	return cout;
+}
+int main()
+{
+	Anketa a("Gdje se nalazi FIT?", 2);
+	a.DodajOdgovor("Mostar", 1);
+	a.DodajOdgovor("Sarajevo", 2);
+	a.DodajOdgovor("Konjic", 3); 
+	a.UkloniOdgovor(1);
+	a.UkloniOdgovor(2);
+	a++;
+	++a;
+	cout << a << endl;
+	system("pause>0");
+	return 0;
+}
+

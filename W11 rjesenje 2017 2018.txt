@@ -1,0 +1,296 @@
+#include<iostream>
+#include<vector>
+#include<string>
+#include <iterator>
+#include <algorithm>
+#include <regex>
+#include <cmath>
+using namespace std;
+class NedozvoljenaStiuacija :public exception {
+	string poruka;
+	int linija;
+public:
+	NedozvoljenaStiuacija(const char* por, int lin) :exception(por) {
+		poruka = por;
+		linija = lin;
+	}
+};
+class Term
+{
+	char* _key;
+	char* _value;
+
+	void SetDefaultValues() {
+		_key = nullptr;
+		_value = nullptr;
+	}
+public:
+	Term(const char *key, const char*value)
+	{
+		string pravilo = "(?:([0-9]+|\\s|[@#$,]+))";
+		regex obj(pravilo);
+		if (regex_search(key, obj))
+		{
+			SetDefaultValues();
+			throw NedozvoljenaStiuacija("Ne moze key sadrzavati broj,space,ili specijalni znak", __LINE__);
+		}
+		if (regex_search(value, obj))
+		{
+			SetDefaultValues();
+			throw NedozvoljenaStiuacija("Ne moze key sadrzavati broj,space,ili specijalni znak", __LINE__);
+		}
+		int size = strlen(key) + 1;
+		_key = new char[size];
+		strcpy_s(_key, size, key);
+
+		size = strlen(value) + 1;
+		_value = new char[size];
+		strcpy_s(_value, size, value);
+	}
+	Term(const Term&t)
+	{
+		int size = strlen(t._key) + 1;
+		_key = new char[size];
+		strcpy_s(_key, size, t._key);
+
+		size = strlen(t._value) + 1;
+		_value = new char[size];
+		strcpy_s(_value, size, t._value);
+	}
+	void operator=(const Term&t)
+	{
+		int size = strlen(t._key) + 1;
+		_key = new char[size];
+		strcpy_s(_key, size, t._key);
+
+		size = strlen(t._value) + 1;
+		_value = new char[size];
+		strcpy_s(_value, size, t._value);
+	}
+	~Term()
+	{
+		delete[]_key; delete[]_value; _key = _value = nullptr;
+	}
+	bool operator<(const Term &t)
+	{
+		string keyy = t._key;
+		string kej = _key;
+		if (_key < keyy)
+			return true;
+		return false;
+	}
+	char* GetKey()const {
+		return _key;
+	}
+	char *GetValue()const {
+		return _value;
+	}
+	friend ostream&operator<<(ostream&cout, Term&t);
+	friend bool operator==(Term &t, Term &t1);
+	friend bool operator!=(Term &t, Term &t1);
+};
+ostream&operator<<(ostream&cout, Term&t) {
+	cout << "Key: " << t._key << endl;
+	cout << "Value: " << t._value << endl;
+	return cout;
+}
+bool operator==(Term &t, Term &t1) {
+	if (strcmp(t._key, t1._key) == 0)
+		return true;
+	return false;
+}
+bool operator!=(Term &t, Term &t1) {
+	if (strcmp(t._key, t1._key) != 0)
+		return true;
+	return false;
+}
+class Dictionary
+{
+	string _title;
+	int _publicationYear;
+
+	vector<Term> _terms;
+	void SetDefault()
+	{
+		_title = "----";
+		_publicationYear = 2000;
+	}
+public:
+	Dictionary(string title, int publicitionyear)
+	{
+		string prvoslovo = "^[A-Z]";
+		regex obj(prvoslovo);
+		if (regex_search(title, obj))
+			_title = title;
+		else
+		{
+			SetDefault();
+			throw NedozvoljenaStiuacija("Kod title prvo slovo mora biti veliko.", __LINE__);
+		}
+		_publicationYear = publicitionyear;
+	}
+	void operator()(Term &t)
+	{
+		for (int i = 0; i < _terms.size(); i++)
+		{
+			if (_terms[i] == t)
+				throw NedozvoljenaStiuacija("Ne mozete dodati dva ista termina.", __LINE__);
+		}
+		_terms.push_back(t);
+		sort(_terms.begin(), _terms.end());
+	}
+	void operator-=(const char*key)
+	{
+		for (int i = 0; i < _terms.size() + 1; i++)
+		{
+			if (strcmp(_terms[i].GetKey(), key) == 0)
+			{
+				_terms.erase(_terms.begin() + i);
+				sort(_terms.begin(), _terms.end());
+				return;
+			}
+		}
+		throw NedozvoljenaStiuacija("Ne postoji key sa takvim imenom.", __LINE__);
+	}
+	int GetBrojPojmova()
+	{
+		return _terms.size();
+	}
+	char *operator[](const char *key)
+	{
+		for (int i = 0; i < _terms.size(); i++)
+		{
+			if (strcmp(_terms[i].GetKey(), key) == 0)
+				return _terms[i].GetValue();
+		}
+		throw NedozvoljenaStiuacija("Ne postoji termin sa tim kljucem.", __LINE__);
+	}
+	vector<Term> GetVector()const { return _terms; }
+	vector<char*> GetKolekcija(int brojrijeci)
+	{
+		int max = brojrijeci;
+		int rundNum;
+		vector<char*> kolekcijarijeci;
+		for (int i = 0; i < _terms.size(); i++)
+		{
+			rundNum = rand() % (_terms.size() - 0 + 1) + 0;
+			if (rundNum < _terms.size())
+			{
+				if (max != 0)
+				{
+					kolekcijarijeci.push_back(_terms[rundNum].GetKey());
+					max--;
+				}
+				else
+					return kolekcijarijeci;
+			}
+		}
+		for (int i = 0; i < kolekcijarijeci.size(); i++)
+		{
+			cout << kolekcijarijeci[i] << endl;
+		}
+		return kolekcijarijeci;
+	}
+	friend ostream&operator<<(ostream&cout, Dictionary &d);
+};
+ostream&operator<<(ostream&cout, Dictionary &d) {
+	cout << "Title:" << d._title << endl;
+	cout << "Publication year:" << d._publicationYear << endl;
+	cout << "Termini:" << endl;
+	for (int i = 0; i < d._terms.size(); i++)
+	{
+		cout << d._terms[i] << endl;
+	}
+	return cout;
+}
+
+class Competitor
+{
+	string _ime;
+	string _prezime;
+	string _username; //ime.prezime
+	string _password;
+	vector<string> _pitanja;
+	vector<string> _odgovori;
+	int _brojbodova;
+public:
+	Competitor(string ime, string prezime, string username, string pass)
+	{
+		string pravilo = "(?=.{6,})(?=.[a-zA-Z]+)(?=.+[#%$@?!,])";
+		regex obj(pravilo);
+		//(?:(" + ime + "|" + prezime + "))
+		string pravilo1 = "";
+		regex obj1(pravilo);
+		_ime = ime;
+		_prezime = prezime;
+		_username = username;   //treba dodijeliti pravilo da ide u formatu prvo ime pa tacka pa prezime
+		if (regex_search(pass, obj))
+		{
+			_password = pass;
+		}
+		else
+			throw NedozvoljenaStiuacija("Password trebaju imati najmanje 6 karaktera uz jedno veliko i malo slovo.", __LINE__);
+	}
+	void operator()(Dictionary &d)
+	{
+		for (int i = 0; i < d.GetBrojPojmova(); i++)
+		{
+			_pitanja.push_back(d.GetVector()[i].GetKey());
+			_odgovori.push_back(d.GetVector()[i].GetValue());
+		}
+	}
+	friend ostream& operator << (ostream&cout, Competitor&c);
+	void OdgovoriteNaPitanje(string odgovor, int brojpitanja)
+	{
+		if (odgovor == _odgovori[brojpitanja - 1])
+		{
+			cout << "Odgovorili ste tacno osvojili ste 1 bod." << endl;
+			_brojbodova++;
+		}
+		else
+			cout << "Nista odgovorili tacno." << endl;
+	}
+	int GetBrojBodova()const { return _brojbodova; }
+	string GetIme()const { return _ime; }
+};
+ostream& operator << (ostream&cout, Competitor&c) {
+	cout << "Ime: " << c._ime << endl;
+	cout << "Prezime: " << c._prezime << endl;
+	cout << "User name: " << c._username << endl;
+	cout << "Password: " << c._password << endl;
+	for (int i = 0; i < c._pitanja.size(); i++)
+	{
+		cout << i + 1 << ". Pitanje: " << c._pitanja[i] << endl;
+		cout << i + 1 << ". Odgovor: " << c._odgovori[i] << endl;
+	}
+	return cout;
+}
+int main()
+{
+	try
+	{
+		Term t("Kuca", "Home");
+		Term t1("Greska", "Issue");
+		Dictionary d("Nekititle", 2000);
+		d(t);
+		d(t1);
+		cout << d["Kuca"] << endl;
+		//d -= "Kuca";
+		d.GetKolekcija(3).size();
+		Competitor c("Abedin", "Halilovic", "ime.prezime", "Neki#pass");
+		Competitor c1("Drugi", "Takmicar", "ime.prezime", "Neki#pass");
+		c(d);
+		c1(d);
+		cout << c << endl;
+		c.OdgovoriteNaPitanje("Issue", 1);
+		c1.OdgovoriteNaPitanje("Issuee", 1);
+		if (c.GetBrojBodova() > c1.GetBrojBodova())
+			cout << "Pobijedio je takmicar sa imenom: " << c.GetIme() << endl;
+	}
+	catch (NedozvoljenaStiuacija &exe)
+	{
+		cout << "Greska:" << exe.what() << endl;
+	}
+	system("pause>0");
+	return 0;
+}

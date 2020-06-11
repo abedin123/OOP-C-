@@ -1,0 +1,355 @@
+#include<iostream>
+using namespace std;
+
+char * AlocirajNizKaraktera(const char * sadrzaj) {
+	if (sadrzaj == nullptr)
+		return nullptr;
+	int vel = strlen(sadrzaj) + 1;
+	char * temp = new char[vel];
+	strcpy_s(temp, vel, sadrzaj);
+	return temp;
+}
+template <class T1, class T2, int max>
+class Kolekcija
+{
+	T1 _elementi1[max];
+	T2 _elementi2[max];
+	int _trenutno;
+public:
+	Kolekcija() : _trenutno(0) {}
+	Kolekcija(const Kolekcija&k)
+	{
+		_trenutno = k._trenutno;
+		for (int i = 0; i < _trenutno; i++)
+		{
+			_elementi1[i] = k._elementi1[i];
+			_elementi2[i] = k._elementi2[i];
+		}
+	}
+	void operator=(const Kolekcija&k)
+	{
+		_trenutno = k._trenutno;
+		for (int i = 0; i < _trenutno; i++)
+		{
+			_elementi1[i] = k._elementi1[i];
+			_elementi2[i] = k._elementi2[i];
+		}
+	}
+	void AddElement(T1 el1, T2 el2)
+	{
+		if (_trenutno == max)
+			return;
+
+		_elementi1[_trenutno] = el1;
+		_elementi2[_trenutno++] = el2;
+
+	}
+	int GetTrenutno()const { return _trenutno; }
+	void SetElement1(T1 t, int lok) const { _elementi1[lok] = t; }
+	void SetElement2(T2 t, int lok) const { _elementi2[lok] = t; }
+	T1 GetElement1(int lok)const { return _elementi1[lok]; }
+	T2 GetElement2(int lok) const { return _elementi2[lok]; }
+	int GetMax()const { return max; }
+	void SetTrenutno(int vel) { _trenutno = vel; }
+	void RemoveAll() { _trenutno = 0; }
+	friend ostream& operator<<<>(ostream&, const Kolekcija&);
+};
+template <class T1, class T2, int max>
+ostream& operator<<<>(ostream& cout, const Kolekcija<T1, T2, max>& k)
+{
+	for (size_t i = 0; i < k._trenutno; i++)
+	{
+		cout << k._elementi1[i] << " - " << k._elementi2[i] << endl;
+	}
+
+	return cout;
+}
+
+class Ispit
+{
+protected:
+	char* _predmet;
+	char _datumOdrzavanja[12];
+	char _vrijemeOdrzavanja[6]; // pocetak ispita
+	int _trajanje; //trajanje ispita u minutama
+	int _maxBrojBodova;
+	double _rezultat; //procentualni rezultat ispita
+public:
+	Ispit() {
+		_predmet = new char[4];
+		strcpy_s(_predmet, 4, "---");
+		strcpy_s(_datumOdrzavanja, 12, "11.11.2011");
+		strcpy_s(_vrijemeOdrzavanja, 6, "10:30");
+		_trajanje = 60;
+		_maxBrojBodova = 10;
+		_rezultat = 0;
+	}
+	Ispit(const char* predmet, const char* datumOdrzavanja, const char* vrijemeOdrzavanja, int trajanje)
+	{
+		_predmet = AlocirajNizKaraktera(predmet);
+
+		strncpy_s(_datumOdrzavanja, datumOdrzavanja, _TRUNCATE);
+		strncpy_s(_vrijemeOdrzavanja, vrijemeOdrzavanja, _TRUNCATE);
+
+		_trajanje = trajanje;
+
+	}
+	Ispit(const Ispit&i)
+	{
+		_predmet = AlocirajNizKaraktera(i._predmet);
+		strcpy_s(_datumOdrzavanja, 12, i._datumOdrzavanja);
+		strcpy_s(_vrijemeOdrzavanja, 6, i._vrijemeOdrzavanja);
+		_trajanje = i._trajanje;
+		_maxBrojBodova = i._maxBrojBodova;
+		_rezultat = i._rezultat;
+	}
+	void operator=(const Ispit&i)
+	{
+		_predmet = AlocirajNizKaraktera(i._predmet);
+		strcpy_s(_datumOdrzavanja, 12, i._datumOdrzavanja);
+		strcpy_s(_vrijemeOdrzavanja, 6, i._vrijemeOdrzavanja);
+		_trajanje = i._trajanje;
+		_maxBrojBodova = i._maxBrojBodova;
+		_rezultat = i._rezultat;
+	}
+	~Ispit()
+	{
+		delete[] _predmet;
+		_predmet = NULL;
+	}
+	void Info()const
+	{
+		cout << "Predmet: " << _predmet << endl;
+		cout << "Termin ispita: " << _datumOdrzavanja << " u " << _vrijemeOdrzavanja << endl;
+		cout << "Trajanje: " << _trajanje << endl;
+
+		cout << "Maksimalan broj bodova: " << _maxBrojBodova << endl;
+		cout << "Rezultat: " << _rezultat << endl;
+	}
+};
+
+class PismeniIspit :public Ispit
+{
+	Kolekcija<char*, int, 50>* _pitanja; //kolekcija pitanja sa brojem bodova
+	Kolekcija<char*, int, 50> _odgovori; //kolekcija odgovora sa brojem osvojenih bodova
+	int _brTacnihOdgovora;
+	int _brOsvojenihBodova;
+public:
+	PismeniIspit() :Ispit()
+	{
+		_brOsvojenihBodova = 0;
+		_brTacnihOdgovora = 0;
+		_pitanja = nullptr;
+	}
+	PismeniIspit(const char* predmet, const char* datumOdrzavanja, const char* vrijemeOdrzavanja, int trajanje) :Ispit(predmet, datumOdrzavanja, vrijemeOdrzavanja, trajanje)
+	{
+		_brOsvojenihBodova = 0;
+		_brTacnihOdgovora = 0;
+		_pitanja = new Kolekcija<char*, int, 50>;
+	}
+	~PismeniIspit()
+	{
+		if (_pitanja != nullptr)
+		{
+			for (int i = 0; i < _pitanja->GetTrenutno(); i++)
+			{
+				delete[]_pitanja->GetElement1(i);
+			}
+			delete _pitanja; _pitanja = nullptr;	
+		}
+		for (int i = 0; i < _odgovori.GetTrenutno(); i++)
+		{
+			delete[]_odgovori.GetElement1(i);
+		}
+	}
+	PismeniIspit(const PismeniIspit&p) :Ispit(p)
+	{
+		_pitanja = new Kolekcija<char*, int, 50>;
+		for (int i = 0; i < p._pitanja->GetTrenutno(); i++)
+		{
+			_pitanja->AddElement(AlocirajNizKaraktera(p._pitanja->GetElement1(i)), p._pitanja->GetElement2(i));
+			_odgovori.AddElement(AlocirajNizKaraktera(p._odgovori.GetElement1(i)), p._odgovori.GetElement2(i));
+		}
+		_brOsvojenihBodova = p._brOsvojenihBodova;
+		_brTacnihOdgovora = p._brTacnihOdgovora;
+	}
+	void operator=(const PismeniIspit&p)
+	{
+		_predmet = AlocirajNizKaraktera(p._predmet);
+		strcpy_s(_datumOdrzavanja, 12, p._datumOdrzavanja);
+		strcpy_s(_vrijemeOdrzavanja, 6, p._vrijemeOdrzavanja);
+		_trajanje = p._trajanje;
+		_maxBrojBodova = p._maxBrojBodova;
+		_rezultat = p._rezultat;
+		//Ispravno
+		if (_pitanja != nullptr) { //obzirom da default-ni konstruktor postavlja nullptr vrijednost, ovo je scenarij koji je realno moguc
+			for (size_t i = 0; i < _pitanja->GetTrenutno(); i++)
+			{
+				delete[] _pitanja->GetElement1(i);
+			}
+			_pitanja->RemoveAll();//Metoda u Kolekciji koja postavlja brojac na 0 (uklanja sve elemente)
+			delete _pitanja; _pitanja = nullptr;
+		}
+		else
+			_pitanja = new Kolekcija<char*, int, 50>;
+
+		for (size_t i = 0; i < _odgovori.GetTrenutno(); i++)
+		{
+			delete[] _odgovori.GetElement1(i);
+		}
+		_odgovori.RemoveAll();
+
+		//Tek sada se radi kopiranje iz nove kolekcije (ja bih odvojila kolekcije u dvije petlje)
+
+		for (size_t i = 0; i < p._pitanja->GetTrenutno(); i++)
+		{
+			_pitanja->AddElement(AlocirajNizKaraktera(p._pitanja->GetElement1(i)), p._pitanja->GetElement2(i));
+		}
+
+		for (size_t i = 0; i < p._odgovori.GetTrenutno(); i++)
+		{
+			_odgovori.AddElement(AlocirajNizKaraktera(p._odgovori.GetElement1(i)), p._odgovori.GetElement2(i));
+		}
+		_brOsvojenihBodova = p._brOsvojenihBodova;
+		_brTacnihOdgovora = p._brTacnihOdgovora;
+	}
+	void operator()(const char*pitanje, int brojbodova)
+	{
+		if (brojbodova < 0)
+		{
+			cout << "Broj bodova na ispitu ne smije biti negativan." << endl;
+			return;
+		}
+		for (int i = 0; i < _pitanja->GetTrenutno(); i++)
+		{
+			if (strcmp(_pitanja->GetElement1(i), pitanje) == 0)
+			{
+				cout << "Ne mozete dodati ista pitanja." << endl;
+				return;
+			}
+		}
+		_pitanja->AddElement(AlocirajNizKaraktera(pitanje), brojbodova);
+	}
+	void operator+=(const char*odgovor)
+	{
+		_odgovori.AddElement(AlocirajNizKaraktera(odgovor), 0);
+	}
+	void OcijeniOdgovor(const char*odgovor, int rednibroj)
+	{
+		rednibroj -= 1;
+		if (strcmp(_odgovori.GetElement1(rednibroj), odgovor) == 0)
+		{
+			_brTacnihOdgovora++;
+			_brOsvojenihBodova += _pitanja->GetElement2(rednibroj);
+			cout << "Odgovorili ste tacno na ponudjeno pitanje,ostvojili ste " << _pitanja->GetElement2(rednibroj) << " boda/ova." << endl;
+		}
+		else
+			cout << "Niste odgovorili tacno na pitanje." << endl;
+	}
+	friend ostream&operator<<(ostream&, const PismeniIspit&p);
+};
+ostream&operator<<(ostream&, const PismeniIspit&p) {
+	p.Ispit::Info();
+	cout << *p._pitanja << endl;
+	cout << p._odgovori << endl;
+	return cout;
+}
+class PrakticniIspit :public Ispit
+{
+	Kolekcija<char*, char*, 3> _alati; //potrebni alati i njihove verzije, npr. alat "Visual Studio", verzija "2017"
+	char* _zadatak; //tekst zadatka
+	bool _zadovoljeno; //true ako je student zadovoljio na ispitu, u suprotnom false
+public:
+	PrakticniIspit() :Ispit()
+	{
+		_zadatak = nullptr;
+		_zadovoljeno = false;
+	}
+	~PrakticniIspit()
+	{
+		for (int i = 0; i < _alati.GetTrenutno(); i++)
+		{
+			delete[] _alati.GetElement2(i);
+			delete[] _alati.GetElement1(i);
+		}
+		delete[]_zadatak; _zadatak = nullptr;
+	}
+	PrakticniIspit(const char* predmet, const char* datumOdrzavanja, const char* vrijemeOdrzavanja, int trajanje) :Ispit(predmet, datumOdrzavanja, vrijemeOdrzavanja, trajanje)
+	{
+		_zadatak = nullptr;
+		_zadovoljeno = false;
+	}
+	PrakticniIspit(const PrakticniIspit&p) :Ispit(p)
+	{
+		for (int i = 0; i < p._alati.GetTrenutno(); i++)
+		{
+			_alati.AddElement(AlocirajNizKaraktera(p._alati.GetElement1(i)), AlocirajNizKaraktera(p._alati.GetElement2(i)));
+		}
+		_zadatak = AlocirajNizKaraktera(p._zadatak);
+		_zadovoljeno = p._zadovoljeno;
+	}
+	void operator=(const PrakticniIspit&p)
+	{
+		_predmet = AlocirajNizKaraktera(p._predmet);
+		strcpy_s(_datumOdrzavanja, 12, p._datumOdrzavanja);
+		strcpy_s(_vrijemeOdrzavanja, 6, p._vrijemeOdrzavanja);
+		_trajanje = p._trajanje;
+		_maxBrojBodova = p._maxBrojBodova;
+		_rezultat = p._rezultat;
+
+		for (int i = 0; i < _alati.GetTrenutno(); i++)
+		{
+				delete[]_alati.GetElement1(i);
+				delete[]_alati.GetElement2(i);
+		}
+		_alati.RemoveAll();
+		for (int i = 0; i < p._alati.GetTrenutno(); i++)
+		{
+			_alati.AddElement(AlocirajNizKaraktera(p._alati.GetElement1(i)), AlocirajNizKaraktera(p._alati.GetElement2(i)));
+		}
+		if (_zadatak != nullptr)
+		{
+			delete[]_zadatak; _zadatak = nullptr;
+		}
+		_zadatak = AlocirajNizKaraktera(p._zadatak);
+		_zadovoljeno = p._zadovoljeno;
+	}
+	void operator()(const char*alat, const char*verzija)
+	{
+		char *temp = AlocirajNizKaraktera(alat);
+		char *temp1 = AlocirajNizKaraktera(verzija);
+		_alati.AddElement(temp, temp1);
+	}
+	void operator+=(const char*zadatak)
+	{
+		_zadatak = AlocirajNizKaraktera(zadatak);
+	}
+	friend ostream&operator<<(ostream&, const PrakticniIspit&p);
+};
+ostream&operator<<(ostream&, const PrakticniIspit&p) {
+	p.Ispit::Info();
+	cout << p._alati << endl;
+	return cout;
+}
+int main()
+{
+	PismeniIspit p("PR3", "11.12.2018", "10:30", 90);
+	p("Kada se poziva konstruktor?", 2);
+	p("Sta radi konstruktor kopije?", 4);
+	p += "Prilikom inicijalizacije";
+	p += "Pravi objekat na osnovu nekog drugog objekta.";
+	p.OcijeniOdgovor("Prilikom inicijalizacije", 1);
+	Kolekcija<PismeniIspit, char*, 2> _pismeniIspiti;
+	char *temp = AlocirajNizKaraktera("Neki char");
+	_pismeniIspiti.AddElement(p, temp);
+	//cout << _pismeniIspiti << endl;
+	PrakticniIspit p2("PR2", "13.12.2018", "11:30", 60);
+	p2("Visual Studio", "2017");
+	p += "Zadatak zadatak";
+	Kolekcija<PrakticniIspit, char*, 2> _prakticniIspiti;
+	_prakticniIspiti.AddElement(p2, AlocirajNizKaraktera("nesto"));
+	cout << _prakticniIspiti << endl;
+	system("pause");
+	return 0;
+}
+

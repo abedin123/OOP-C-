@@ -1,0 +1,643 @@
+#include <iostream>	
+#include <string>	
+#include <vector>	
+#include <algorithm>
+#include <exception>
+using namespace std;
+class Izuzetak :public exception {
+	int linija;
+public:
+	Izuzetak(const char* por, int lin) :exception(por)
+	{
+		linija = lin;
+	}
+	void Info()const {
+		cout << "Greska->>" << what() << " linija koda:" << linija << endl;
+	}
+};
+template<class T1, class T2, int max>
+class Kolekcija {
+	T1* _elementi1[max];
+	T2* _elementi2[max];
+	int _trenutno;
+public:
+	Kolekcija()
+	{
+		for (int i = 0; i < max; i++)
+		{
+			_elementi1[i] = nullptr;
+			_elementi2[i] = nullptr;
+		}
+		_trenutno = 0;
+	}
+
+	Kolekcija(const Kolekcija& k)
+	{
+		for (int i = 0; i < max; i++)
+		{
+			if (i < k._trenutno)
+			{
+				_elementi1[i] = new T1(*k._elementi1[i]);
+				_elementi2[i] = new T2(*k._elementi2[i]);
+			}
+			else
+			{
+				_elementi1[i] = nullptr;
+				_elementi2[i] = nullptr;
+			}
+		}
+
+		_trenutno = k._trenutno;
+
+	}
+	void operator=(const Kolekcija& k)
+	{
+		for (int i = 0; i < max; i++)
+		{
+			if (i < k._trenutno)
+			{
+				_elementi1[i] = new T1(*k._elementi1[i]);
+				_elementi2[i] = new T2(*k._elementi2[i]);
+			}
+			else
+			{
+				_elementi1[i] = nullptr;
+				_elementi2[i] = nullptr;
+			}
+		}
+
+		_trenutno = k._trenutno;
+
+	}
+	~Kolekcija()
+	{
+		for (int i = 0; i < _trenutno; i++)
+		{
+			delete _elementi1[i];
+			_elementi1[i] = nullptr;
+
+			delete _elementi2[i];
+			_elementi2[i] = nullptr;
+		}
+	}
+
+	void Dodaj(T1& el1, T2& el2)
+	{
+		if (_trenutno == max)
+			throw exception("Dostigli ste kapacitet kolekcije.");
+
+		_elementi1[_trenutno] = new T1(el1);
+		_elementi2[_trenutno] = new T2(el2);
+
+		_trenutno++;
+
+	}
+
+	T1& GetElement1(int index)const
+	{
+		if (index >= 0 && index < _trenutno)
+			return *_elementi1[index];
+
+		throw exception("Vrijednost indeksa nije validna.");
+	}
+
+	T2& GetElement2(int index)const
+	{
+		if (index >= 0 && index < _trenutno)
+			return *_elementi2[index];
+
+		throw exception("Vrijednost indeksa nije validna.");
+
+	}
+
+	int GetTrenutno()const { return _trenutno; }
+	friend ostream&operator<<<>(ostream&cout, Kolekcija<T1, T2, max>&k);
+};
+template<class T1, class T2, int max>
+ostream&operator<<<>(ostream&cout, Kolekcija<T1, T2, max>&k) {
+	for (int i = 0; i < k._trenutno; i++)
+	{
+		cout << k._elementi1[i] << " - " << k._elementi2[i] << endl;
+	}
+	return cout;
+}
+class Uplata {
+	char* _datum;
+	double _iznos;
+public:
+	Uplata(const char* datum, double iznos)
+	{
+		int vel = strlen(datum) + 1;
+		_datum = new char[vel];
+		strcpy_s(_datum, vel, datum);
+
+		_iznos = iznos;
+	}
+	Uplata(const Uplata&u)
+	{
+		int size = strlen(u._datum) + 1;
+		_datum = new char[size];
+		strcpy_s(_datum, size, u._datum);
+		_iznos = u._iznos;
+	}
+	void operator=(const Uplata&u)
+	{
+		delete[]_datum; _datum = nullptr;
+		int size = strlen(u._datum) + 1;
+		_datum = new char[size];
+		strcpy_s(_datum, size, u._datum);
+		_iznos = u._iznos;
+	}
+	~Uplata()
+	{
+		delete[] _datum;
+		_datum = nullptr;
+	}
+	double GetIznos()const { return _iznos; }
+	friend ostream& operator<<(ostream&, const Uplata&);
+};
+
+ostream& operator<<(ostream& cout, const Uplata& u)
+{
+	cout << "Datum uplate: " << u._datum << endl;
+	cout << "Iznos: " << u._iznos << endl;
+
+	return cout;
+}
+
+class Oprema
+{
+	string _naziv;
+	string* _proizvodjac;
+	double _cijena;
+	int _dostupnoNaStanju;
+public:
+	Oprema()
+	{
+		_proizvodjac = nullptr;
+	}
+	Oprema(string naziv, string proizvodjac, double cijena, int dostupno)
+	{
+		_naziv = naziv;
+		_proizvodjac = new string(proizvodjac);
+		_cijena = cijena;
+		_dostupnoNaStanju = dostupno;
+	}
+	Oprema(const Oprema&o)
+	{
+		_naziv = o._naziv;
+		_proizvodjac = new string(*o._proizvodjac);
+		_cijena = o._cijena;
+		_dostupnoNaStanju = o._dostupnoNaStanju;
+	}
+	void operator=(const Oprema&o)
+	{
+		delete _proizvodjac;
+		_proizvodjac = nullptr;
+		_naziv = o._naziv;
+		_proizvodjac = new string(*o._proizvodjac);
+		_cijena = o._cijena;
+		_dostupnoNaStanju = o._dostupnoNaStanju;
+	}
+	~Oprema()
+	{
+		delete _proizvodjac;
+		_proizvodjac = nullptr;
+	}
+	friend bool operator==(const Oprema&p, const Oprema&o);
+	friend bool operator!=(const Oprema&p, const Oprema&o);
+	double GetCijena()const { return _cijena; }
+	friend ostream&operator<<(ostream&cout, const Oprema&o);
+};
+bool operator==(const Oprema&p, const Oprema&o) {
+	if (p._naziv == o._naziv&&*p._proizvodjac == *o._proizvodjac&&p._cijena == o._cijena)
+		return true;
+	return false;
+}
+bool operator!=(const Oprema&p, const Oprema&o) {
+	if (p._naziv != o._naziv || *p._proizvodjac != *o._proizvodjac || p._cijena != o._cijena)
+		return true;
+	return false;
+}
+ostream&operator<<(ostream&cout, const Oprema&o) {
+	cout << "Naziv opreme: " << o._naziv << endl;
+	cout << "Proizvodjac: " << *o._proizvodjac << endl;
+	cout << "Cijena: " << o._cijena << endl;
+	cout << "Dostupno na stanju: " << o._dostupnoNaStanju << endl;
+	return cout;
+}
+class Ucenik
+{
+	string _imePrezime;
+	int _godiste;
+	bool _posjedujeOpremu;
+	vector<Oprema>* _iznajmljenaOprema; //Trenutno iznajmljena oprema
+	Kolekcija<Uplata, string, 100> _uplate; //Drugi parametar tipa string predstavlja svrhu uplate: trening ili oprema
+public:
+	Ucenik(string imePrezime, int godiste, bool posjedujeOpremu = false)
+	{
+		_iznajmljenaOprema = new vector<Oprema>;
+		_imePrezime = imePrezime;
+		_godiste = godiste;
+		_posjedujeOpremu = posjedujeOpremu;
+	}
+	Ucenik(const Ucenik&u)
+	{
+		_imePrezime = u._imePrezime;
+		_godiste = u._godiste;
+		_posjedujeOpremu = u._posjedujeOpremu;
+		_iznajmljenaOprema = new vector<Oprema>();
+		for (int i = 0; i < u._iznajmljenaOprema->size(); i++)
+		{
+			_iznajmljenaOprema->push_back((*_iznajmljenaOprema)[i]);
+		}
+		_uplate = u._uplate;
+	}
+	void operator=(const Ucenik&u)
+	{
+		delete _iznajmljenaOprema; _iznajmljenaOprema = nullptr;
+		_imePrezime = u._imePrezime;
+		_godiste = u._godiste;
+		_posjedujeOpremu = u._posjedujeOpremu;
+		_iznajmljenaOprema = new vector<Oprema>();
+		for (int i = 0; i < u._iznajmljenaOprema->size(); i++)
+		{
+			_iznajmljenaOprema->push_back((*_iznajmljenaOprema)[i]);
+		}
+		_uplate = u._uplate;
+	}
+	~Ucenik()
+	{
+		delete _iznajmljenaOprema;
+		_iznajmljenaOprema = nullptr;
+	}
+	void operator+=(Oprema &o)
+	{
+		_iznajmljenaOprema->push_back(o);
+	}
+	void operator-=(Oprema &o)
+	{
+		int indx = 0;
+		for (int i = 0; i < _iznajmljenaOprema->size(); i++)
+		{
+			if (o == (*_iznajmljenaOprema)[i])
+				indx = i;
+		}
+		_iznajmljenaOprema->erase(_iznajmljenaOprema->begin() + indx);
+	}
+	void DodajUplatu(Uplata &u, string svrha)
+	{
+		if (_uplate.GetTrenutno() == 100)
+			return;
+		_uplate.Dodaj(u, svrha);
+	}
+	bool operator==(const Ucenik&u)
+	{
+		if (_imePrezime == u._imePrezime&&_godiste == u._godiste&&_posjedujeOpremu == u._posjedujeOpremu)
+			return true;
+		return false;
+	}
+	double GetIznosSvihUplataSaIznajmljenomOpremom() {
+		double iznos = 0;
+		for (int i = 0; i < _uplate.GetTrenutno(); i++)
+		{
+			iznos += _uplate.GetElement1(i).GetIznos();
+		}
+		for (int i = 0; i < _iznajmljenaOprema->size(); i++)
+		{
+			iznos += (*_iznajmljenaOprema)[i].GetCijena();
+		}
+		return iznos;
+	}
+	friend ostream&operator<<(ostream&cout, const Ucenik&u);
+};
+ostream&operator<<(ostream&cout, const Ucenik&u) {
+	cout << "Ime i prezime: " << u._imePrezime << endl;
+	cout << "Godiste: " << u._godiste << endl;
+	if (u._posjedujeOpremu == true)
+		cout << "Posjeduje opremu." << endl;
+	else
+		cout << "Ne posjeduje opremu." << endl;
+	for (int i = 0; i < u._iznajmljenaOprema->size(); i++)
+	{
+		cout << (*u._iznajmljenaOprema)[i] << endl;
+	}
+	for (int i = 0; i < u._uplate.GetTrenutno(); i++)
+	{
+		cout << u._uplate.GetElement1(i) << " - " << u._uplate.GetElement2(i) << endl;
+	}
+	return cout;
+}
+enum TipTreninga { Pocetnicki, Rekreativni, Profesionalni };
+const char* tipTreninga[]{ "Pocetnicki", "Rekreativni", "Profesionalni" };
+
+class SkiTrener
+{
+	string _imePrezime;
+	bool _certificiran;
+	char _spol;
+	TipTreninga  _tipTreninga;
+public:
+	SkiTrener(string imeiprezime, bool certificiran, char spol, TipTreninga tip)
+	{
+		_imePrezime = imeiprezime;
+		_certificiran = certificiran;
+		_spol = spol;
+		_tipTreninga = tip;
+	}
+	bool operator==(const SkiTrener&ski)
+	{
+		if (_imePrezime == ski._imePrezime&&_certificiran == ski._certificiran&&_spol == ski._spol&&_tipTreninga == ski._tipTreninga)
+			return true;
+		return false;
+	}
+	TipTreninga GetTipTreninga()const { return _tipTreninga; }
+	friend ostream&operator<<(ostream&cout, const SkiTrener&ski);
+};
+ostream&operator<<(ostream&cout, const SkiTrener&ski)
+{
+	cout << "Ime i prezime trenera: " << ski._imePrezime << endl;
+	if (ski._certificiran == true)
+		cout << "Certificiran." << endl;
+	else
+		cout << "Nije certificiran." << endl;
+	cout << "Spol: " << ski._spol << endl;
+	cout << "Tip treninga: " << tipTreninga[ski._tipTreninga] << endl;
+	return cout;
+}
+class Trening
+{
+	string* _datum;
+	SkiTrener* _trener;
+	vector<Ucenik*> _ucenici;
+	int _brojCasova;
+public:
+	Trening(string datum, SkiTrener &trener, int brojcasova)
+	{
+		_datum = new string(datum);
+		_trener = &trener;
+		_brojCasova = brojcasova;
+	}
+	Trening(const Trening&t)
+	{
+		_datum = new string(*t._datum);
+		_trener = new SkiTrener(*t._trener);
+		for (int i = 0; i < t._ucenici.size(); i++)
+		{
+			_ucenici.push_back(new Ucenik(*t._ucenici[i]));
+		}
+		_brojCasova = t._brojCasova;
+	}
+	void operator=(const Trening&t)
+	{
+		delete _datum; _datum = nullptr;
+		delete _trener; _trener = nullptr;
+		for (int i = 0; i < _ucenici.size(); i++)
+		{
+			delete _ucenici[i]; _ucenici[i] = nullptr;
+		}
+		_datum = new string(*t._datum);
+		_trener = new SkiTrener(*t._trener);
+		for (int i = 0; i < t._ucenici.size(); i++)
+		{
+			_ucenici.push_back(new Ucenik(*t._ucenici[i]));
+		}
+		_brojCasova = t._brojCasova;
+	}
+	~Trening()
+	{
+		delete _datum; _datum = nullptr;
+	}
+	void operator+=(Ucenik &u)
+	{
+		_ucenici.push_back(&u);
+	}
+	vector<Ucenik*> GetUcenika() { return _ucenici; }
+	bool operator==(const Trening&t)
+	{
+		if (*_datum == *t._datum&&*_trener == *t._trener)
+			return true;
+		return false;
+	}
+	SkiTrener &GetTrenera()const { return *_trener; }
+	int GetBrojCasova()const { return _brojCasova; }
+	friend ostream&operator<<(ostream&cout, const Trening &t);
+};
+ostream&operator<<(ostream&cout, const Trening &t) {
+	cout << "Datum: " << *t._datum << endl;
+	cout << "Trener: " << *t._trener << endl;
+	for (int i = 0; i < t._ucenici.size(); i++)
+	{
+		cout << t._ucenici[i] << endl;
+	}
+	cout << "Broj casova: " << t._brojCasova << endl;
+	return cout;
+}
+class SkiKurs {
+	string _periodOdrzavanja;
+	vector<SkiTrener> _treneri;
+	vector<Ucenik> _polaznici;
+	vector<Trening> _treninzi;
+public:
+	SkiKurs(string periododrzavanja)
+	{
+		_periodOdrzavanja = periododrzavanja;
+	}
+	void DodajTrenera(SkiTrener &ski)
+	{
+		for (int i = 0; i < _treneri.size(); i++)
+		{
+			if (_treneri[i] == ski)
+				return;
+		}
+		_treneri.push_back(ski);
+	}
+	void DodajPolaznike(Ucenik &u)
+	{
+		for (int i = 0; i < _polaznici.size(); i++)
+		{
+			if (_polaznici[i] == u)
+				return;
+		}
+		_polaznici.push_back(u);
+	}
+	void DodajTrening(Trening &t)
+	{
+		_treninzi.push_back(t);
+	}
+	bool DodajUplatuUceniku(Uplata &u, Ucenik &uc, Trening &t)
+	{
+		for (int i = 0; i < _treninzi.size(); i++)
+		{
+			if (_treninzi[i] == t)
+			{
+				for (int j = 0; j < _treninzi[i].GetUcenika().size(); j++)
+				{
+					if (*_treninzi[i].GetUcenika()[j] == uc)
+					{
+						if (_treninzi[i].GetTrenera().GetTipTreninga() == Pocetnicki)
+						{
+							double potrebaniznos = 10 * (_treninzi[i].GetBrojCasova());
+							if (u.GetIznos() >= potrebaniznos)
+							{
+								_treninzi[i].GetUcenika()[j]->DodajUplatu(u, "nebitno");
+								return true;
+							}
+							else
+								throw Izuzetak("Uplata nije dovoljna.", __LINE__);
+						}
+						if (_treninzi[i].GetTrenera().GetTipTreninga() == Rekreativni)
+						{
+							double potrebaniznos = 15 * (_treninzi[i].GetBrojCasova());
+							if (u.GetIznos() >= potrebaniznos)
+							{
+								_treninzi[i].GetUcenika()[j]->DodajUplatu(u, "nebitno");
+								return true;
+							}
+							else
+								throw Izuzetak("Uplata nije dovoljna.", __LINE__);
+						}
+						if (_treninzi[i].GetTrenera().GetTipTreninga() == Profesionalni)
+						{
+							double potrebaniznos = 20 * (_treninzi[i].GetBrojCasova());
+							if (u.GetIznos() >= potrebaniznos)
+							{
+								_treninzi[i].GetUcenika()[j]->DodajUplatu(u, "nebitno");
+								return true;
+							}
+							else
+								throw Izuzetak("Uplata nije dovoljna.", __LINE__);
+						}
+					}
+				}
+			}
+		}
+		throw Izuzetak("Ne postoji ovaj ucenik na ovom treningu.", __LINE__);
+	}
+
+	void PronadjiSkiTrenera()
+	{
+		int brojcasova = _treninzi[0].GetBrojCasova();
+		int indx = 0;
+		for (int i = 1; i < _treninzi.size(); i++)
+		{
+			if (_treninzi[i].GetBrojCasova() > brojcasova)
+			{
+				indx = i;
+				brojcasova = _treninzi[i].GetBrojCasova();
+			}
+		}
+		double najveciprofit = 0;
+		if (_treninzi[indx].GetTrenera().GetTipTreninga() == Pocetnicki)
+		{
+			najveciprofit = _treninzi[indx].GetBrojCasova() * 10;
+			cout << "Trener :" << endl;
+			cout << _treninzi[indx].GetTrenera() << endl;
+			cout << "Je ostavario najveci profit,a taj profit je:" << najveciprofit << endl;
+			return;
+		}
+		if (_treninzi[indx].GetTrenera().GetTipTreninga() == Rekreativni)
+		{
+			najveciprofit = _treninzi[indx].GetBrojCasova() * 15;
+			cout << "Trener :" << endl;
+			cout << _treninzi[indx].GetTrenera() << endl;
+			cout << "Je ostavario najveci profit,a taj profit je:" << najveciprofit << endl;
+			return;
+		}
+		else
+		{
+			najveciprofit = _treninzi[indx].GetBrojCasova() * 20;
+			cout << "Trener :" << endl;
+			cout << _treninzi[indx].GetTrenera() << endl;
+			cout << "Je ostavario najveci profit,a taj profit je:" << najveciprofit << endl;
+			return;
+		}
+	}
+	void NajvecaZaradaOdUcenika()
+	{
+		double najvecazarada = _polaznici[0].GetIznosSvihUplataSaIznajmljenomOpremom();
+		int indx = 0;
+		for (int i = 1; i < _polaznici.size(); i++)
+		{
+			if (_polaznici[i].GetIznosSvihUplataSaIznajmljenomOpremom() > najvecazarada)
+			{
+				najvecazarada = _polaznici[i].GetIznosSvihUplataSaIznajmljenomOpremom();
+				indx = i;
+			}
+		}
+		cout << "Polaznik koji je donio najvecu zaradu je: " << endl;
+		cout << _polaznici[indx] << endl;
+		cout << "On je donio zaradu od: " << najvecazarada << endl;
+	}
+
+	//Funkciju koja sortira podatke o kompletnom kursu. Podaci trebaju biti sortirani na sljedeci nacin: 
+	//- treneri prema kategoriji
+	//- treninzi prema broju ucenika koji su prisustvovali
+	//- polaznici prema godistu.
+	//Ovu funkciju je potrebno pozvati kreiranjem posebnog thread-a.
+
+	friend ostream& operator<<(ostream&cout, const SkiKurs&k);
+};
+ostream& operator<<(ostream&cout, const SkiKurs&k) {
+	cout << "Period odrzavanja: " << k._periodOdrzavanja << endl;
+	cout << "-----------------------------------------------------------" << endl;
+	cout << "Treneri: " << endl;
+	for (int i = 0; i < k._treneri.size(); i++)
+	{
+		cout << k._treneri[i] << endl;
+	}
+	cout << "-----------------------------------------------------------" << endl;
+	cout << "Polaznici: " << endl;
+	for (int i = 0; i < k._polaznici.size(); i++)
+	{
+		cout << k._polaznici[i] << endl;
+	}
+	cout << "-----------------------------------------------------------" << endl;
+	cout << "Treninzi: " << endl;
+	for (int i = 0; i < k._polaznici.size(); i++)
+	{
+		cout << k._treninzi[i] << endl;
+	}
+	cout << "-----------------------------------------------------------" << endl;
+	return cout;
+}
+
+int main() {
+	Uplata up("12.10.2018", 500);
+	Uplata up1("12.10.2018", 160);
+	Oprema o("Skije", "Svica", 120.5, 2);
+	Ucenik u("Abedin Halilovic", 1999, false);
+	Ucenik u1("Neki Halilovic", 1999, false);
+	u += o;
+	u -= o;
+	u1.DodajUplatu(up1, "nesto");
+	u.DodajUplatu(up, "rata skija");
+	SkiTrener ski("Sadin Memic", true, 'M', Pocetnicki);
+	SkiTrener ski2("Ajdin Muhibic", true, 'M', Profesionalni);
+	Trening t("21.1.2019", ski, 50);
+	Trening t1("21.1.2019", ski2, 8);
+	t += u;
+	t += u1;
+	t1 += u;
+	t1 += u1;
+	SkiKurs kurs("22.19.2019");
+	kurs.DodajPolaznike(u);
+	kurs.DodajPolaznike(u1);
+	kurs.DodajTrenera(ski);
+	kurs.DodajTrenera(ski2);
+	kurs.DodajTrening(t);
+	kurs.DodajTrening(t1);
+	try
+	{
+		kurs.DodajUplatuUceniku(up, u, t);
+		kurs.DodajUplatuUceniku(up1, u, t1);
+	}
+	catch (Izuzetak&i)
+	{
+		i.Info();
+	}
+	kurs.PronadjiSkiTrenera();
+	kurs.NajvecaZaradaOdUcenika();
+	system("pause>0");
+	return 0;
+}

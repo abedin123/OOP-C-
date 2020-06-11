@@ -1,0 +1,258 @@
+#include<iostream>
+using namespace std;
+
+char * AlocirajNizKaraktera(const char * sadrzaj) {
+	if (sadrzaj == nullptr)
+		return nullptr;
+	int vel = strlen(sadrzaj) + 1;
+	char * temp = new char[vel];
+	strcpy_s(temp, vel, sadrzaj);
+	return temp;
+}
+
+class Uposlenik {
+	static int brojsifri;
+	const int _sifra; //Automatski uvecavati za 1 za svakog novog uposlenika.
+	char _ime[30];
+	char _prezime[30];
+	char* _radnoMjesto;
+public:
+	Uposlenik() :_sifra(brojsifri++)
+	{
+		_radnoMjesto = new char[4];
+		strcpy_s(_radnoMjesto, 3, "---");
+	}
+	Uposlenik(const char* ime, const char* prezime, const char* radnoMjesto) :_sifra(brojsifri)
+	{
+		strncpy_s(_ime, ime, _TRUNCATE);
+		strncpy_s(_prezime, prezime, _TRUNCATE);
+		_radnoMjesto = AlocirajNizKaraktera(radnoMjesto);
+	}
+	~Uposlenik()
+	{
+		if (_radnoMjesto != nullptr)
+		{
+			delete[] _radnoMjesto;
+			_radnoMjesto = NULL;
+		}
+	}
+
+	void Info()
+	{
+		cout << "Sifra: " << _sifra << endl;
+		cout << "Ime i prezime: " << _ime << " " << _prezime << endl;
+		cout << "Radno mjesto: " << _radnoMjesto << endl;
+
+	}
+	char *Ime() {
+		char *t;
+		t = _ime;
+		return t;
+	}
+	char *Prezime()
+	{
+		char *t;
+		t = _prezime;
+		return t;
+	}
+	int Sifra()const { return _sifra; }
+	char *Radno()const { return _radnoMjesto; }
+	void UvecajSifru() { brojsifri++; }
+};
+int Uposlenik::brojsifri = 0;
+
+class Aktivnost {
+	char* _naziv;
+	bool _zavrsena;
+	int* _trajanje; //Izrazeno u danima
+	Uposlenik* _uposlenici[5];
+public:
+	Aktivnost(const char *naziv, bool zav, int *trajanje)
+	{
+		int size = strlen(naziv) + 1;
+		_naziv = new char[size];
+		strcpy_s(_naziv, size, naziv);
+		_zavrsena = zav;
+		_trajanje = new int(*trajanje);
+		for (int i = 0; i < 5; i++)
+			_uposlenici[i] = nullptr;
+	}
+	~Aktivnost()
+	{
+		delete[]_naziv;
+		_naziv = nullptr;
+		if (_trajanje != nullptr)
+		{
+			delete _trajanje;
+			_trajanje = nullptr;
+		}
+		for (int i = 0; i < 5; i++)
+		{
+			if(_uposlenici[i]!=nullptr)
+				_uposlenici[i]->~Uposlenik();
+		}
+		
+	}
+
+	bool DodajUposlenika(Uposlenik &uposlenik,bool zavrsena)
+	{
+		/*for (int i = 0; i < 5; i++)
+		{
+			if (strcmp(_uposlenici[i]->Ime(), uposlenik.Ime()) == 0 && strcmp(_uposlenici[i]->Prezime(), uposlenik.Prezime()) == 0)
+			{
+				cout << "Ne mozete dodati istog uposlenika." << endl;
+				return false;
+			}
+		}*/
+		if (zavrsena == 1)
+		{
+			cout << "Ne mozete dodati uposlenika na vec zavrsenu aktivnost." << endl;
+			return false;
+		}
+		for (int i = 0; i < 5; i++)
+		{
+			if (_uposlenici[i] == nullptr)
+			{
+				_uposlenici[i] = new Uposlenik(uposlenik.Ime(),uposlenik.Prezime(),uposlenik.Radno());
+				_uposlenici[i]->UvecajSifru();
+				return true;
+			}
+		}
+	}
+	void Info()
+	{
+		cout << "Naziv aktivnosti:" << _naziv << endl;
+		cout << "Aktivnost traje" << " " << *_trajanje << " " << "dana." << endl;
+		for (int i = 0; i < 5; i++)
+		{
+			if (_uposlenici[i] != nullptr)
+			{
+				_uposlenici[i]->Info();
+			}
+		}
+	}
+	bool UkloniUposlenika(int sifra)
+	{
+		Uposlenik *temp[5];
+		for (int i = 0; i < 5; i++)
+		{
+			temp[i] = nullptr;
+		}
+		int j = 0;
+		for (int i = 0; i < 5; i++)
+		{
+			if (_uposlenici[i] != nullptr)
+			{
+				if (_uposlenici[i]->Sifra() != sifra)
+				{
+					temp[j++] = new Uposlenik(_uposlenici[i]->Ime(),_uposlenici[i]->Prezime(),_uposlenici[i]->Radno());
+				}	
+			}
+		}
+		for (int i = 0; i < 5; i++)
+		{
+			if (_uposlenici[i] != nullptr)
+			{
+				_uposlenici[i]->~Uposlenik();
+				_uposlenici[i] = nullptr;
+			}
+		}
+			for (int i = 0; i < 5; i++)
+			{
+				if (temp[i] != nullptr)
+				{
+					_uposlenici[i] = new Uposlenik(temp[i]->Ime(),temp[i]->Prezime(),temp[i]->Radno());
+				}
+			}
+		if (temp[0] == nullptr) {
+			cout << "Sve je izbaceno iz niza." << endl;
+			return true;
+		}
+		return true;
+	}
+
+	void UkloniSve(Aktivnost &a)
+	{
+		for (int i = 0; i < 5; i++)
+		{
+			if (a._uposlenici[i] != nullptr)
+			{
+				a._uposlenici[i]->~Uposlenik();
+				a._uposlenici[i] = nullptr;
+			}
+		}
+	}
+
+};
+
+class Projekat {
+	char* _naziv;
+	char* _oblast;
+	int _trajanje; //Izrazeno u mjesecima
+	Aktivnost* _aktivnosti;
+	int _brojAktivnosti;
+public:
+
+	//Implementirati potrebne konstruktor i destruktor funkcije.
+
+	//Funkciju za dodavanje projektnih aktivnosti. Sprijeciti dodavanje vise aktivnosti sa istim nazivom.
+	//Za potrebe poredjenja aktivnosti kreirati funkciju unutar klase Aktivnosti.
+
+
+	//Funkciju koja oznacava aktivnost kao zavrsenu. Funkcija kao parametar prima naziv aktivnosti.
+
+
+	//Funkciju koja treba da aktivnosti sa proslijedjenim nazivom dodijeli novog uposlenika.
+
+
+	//Funkciju koja treba da vrati sve uposlenike angazovane na odredjenoj aktivnosti. Ulazni parametar je naziv aktivnosti.
+
+
+	//Funkciju koja uklanja odredjenog uposlenika na aktivnosti. Ulazni parametri funkcije su naziv aktivnosti i sifra uposlenika.
+
+
+	//Funkciju koja uklanja sve uposlenike angazovane na aktivnosti sa nazivom proslijedjenim kao parametar.
+
+
+	//Funkciju koja pronalazi uposlenika sa najvecim brojem angazmana na aktivnostima.
+
+
+	//Funkciju koja pronalazi 3 uposlenika koja su angazovana na najvecem broju nezavrsenih aktivnosti.
+
+
+	//Funkciju koja ispisuje sve zavrsene aktivnosti na projektu.
+
+};
+
+
+/*Kreirati globalnu funkciju koja pronalazi najuspjesnijeg uposlenika na projektima (vise projekata) proslijedjenim kao parametar.
+Uposlenik se smatra najuspjesnijim ako je angazovan na najvecem broju zavrsenih aktivnosti. Ako vise uposlenika
+ima isti broj zavrsenih aktivnosti, uspjesnijim se smatra onaj cije su aktivnosti trajale duze.
+*/
+
+
+int main()
+{
+	int dana = 23;
+	Uposlenik u("Abedin", "Halilovic", "Konjic");
+	Uposlenik u1("Neki", "Nesto", "Negdje");
+	u.Info();
+	cout << "------------------------------------------------" << endl;
+	u1.Info();
+	cout << "------------------------------------------------" << endl;
+	Aktivnost a("Projekat",true,&dana);
+	a.Info();
+	cout << "------------------------------------------------" << endl;
+	a.DodajUposlenika(u, false);
+	a.DodajUposlenika(u1, false);
+	a.Info();
+	cout << "------------------------------------------------" << endl;
+	a.UkloniUposlenika(1);
+	cout << "------------------------------------------------" << endl;
+	a.Info();
+	cout << "------------------------------------------------" << endl;
+	a.UkloniSve(a);
+	a.Info();
+	system("pause");
+	return 0;
+}

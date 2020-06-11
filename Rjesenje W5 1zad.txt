@@ -1,0 +1,243 @@
+#include<iostream>
+using namespace std;
+
+template<class T1, class T2, int max>
+class FITKolekcija
+{
+	int* _trenutno;
+	T1 _elementi1[max];
+	T2* _elementi2[max];
+public:
+	FITKolekcija()
+	{
+		_trenutno = new int(0);
+		for (int i = 0; i < *_trenutno; i++)
+		{
+			_elementi2[i] = nullptr;
+		}
+	}
+	~FITKolekcija()
+	{
+		for (int i = 0; i < *_trenutno; i++)
+		{
+			if(_elementi2[i]!=nullptr)
+				delete _elementi2[i]; _elementi2[i] == nullptr;
+		}
+		delete _trenutno; _trenutno = nullptr;
+	}
+	FITKolekcija(const FITKolekcija &fit)
+	{
+		if (this != &fit)
+		{
+			if (_trenutno != nullptr)
+				delete _trenutno; _trenutno = nullptr;
+			_trenutno = new int(*fit._trenutno);
+			for (int i = 0; i < _trenutno; i++)
+			{
+				_elementi1[i] = fit._elementi1[i];
+			}
+			for (int i = 0; i < _trenutno; i++)
+			{
+				_elementi2[i] = new T2(fit._elementi2[i]);
+			}
+		}
+	}
+	bool operator()(T1 t, T2 t1)
+	{
+		for (int i = 0; i < *_trenutno; i++)
+		{
+			if (_elementi1[i] == t || *_elementi2[i] == t1)
+			{
+				cout << "Ne mozete dodati isti element." << endl;
+				return false;
+			}
+		}
+		if (*_trenutno < max)
+		{
+			_elementi1[*_trenutno] = t;
+			_elementi2[*_trenutno] = new T2(t1);
+			_trenutno=new int(*_trenutno+1);
+			cout << "Dodali ste elemente." << endl;
+			return true;
+		}
+	}
+	T1 operator[](int lokacija)
+	{
+		if (lokacija <= *_trenutno)
+		{
+			lokacija = lokacija - 1;	
+			return _elementi1[lokacija];
+		}
+		else
+		{
+			cout << "Ne postoji element na toj lokaciji." << endl;
+			return 0;
+		}
+	}
+	bool operator-=(int rednibroj)
+	{
+		rednibroj = rednibroj - 1;
+		int j = 0;
+		T1 zam = 0;
+		T2 zamj = 0;
+		if (rednibroj <= *_trenutno)
+		{
+			for (int i = 0; i < *_trenutno; i++)
+			{
+				if (i != rednibroj)
+				{
+					_elementi1[j] = _elementi1[i];
+					_elementi2[j] = _elementi2[i];
+					j++;
+				}
+			}
+			delete _elementi2[*_trenutno]; _elementi2[*_trenutno] = nullptr;
+			_trenutno = new int(*_trenutno - 1);
+			return true;
+		}
+		else
+		{
+			cout << "Nemaju elementi pod tim rednim brojem:" << endl;
+			return false;
+		}
+	}
+	int* GetTrenutno()const { return _trenutno; }
+	int GetMax() { return max; }
+	void SetElement1(const char* t,int lok)
+	{
+		_elementi1[lok] = new char[strlen(t)+1];
+		strcpy_s(_elementi1[lok], strlen(t) + 1, t);
+	}
+	void SetElement2(T2 t, int lok)
+	{
+		_elementi2[lok] = new T2(t);
+	}
+	void SetTretnutno(int tr)
+	{
+		_trenutno = new int(tr + 1);
+	}
+	T1 GetElement1(int lok)const
+	{
+		return _elementi1[lok];
+	}
+	T2 GetElement2(int lok)const
+	{
+		return *_elementi2[lok];
+	}
+	friend ostream&operator<<<>(ostream&COUT, FITKolekcija<T1, T2, max> &fit);
+};
+template<class T1, class T2, int max>
+ostream&operator<<<>(ostream&COUT, FITKolekcija<T1, T2, max> &fit) {
+	COUT << "Elemenit 1:" << endl;
+	for (int i = 0; i < *fit._trenutno; i++)
+	{
+		COUT << fit._elementi1[i] << endl;
+	}
+	COUT << "Elemenit 2:" << endl;
+	for (int i = 0; i < *fit._trenutno; i++)
+	{
+		COUT << *fit._elementi2[i] << endl;
+	}
+	return COUT;
+}
+class Anketa
+{
+	char* _pitanje;
+	int _trajanje; //izraženo u danima
+	//Kolekcija treba da pohrani moguce odgovore na pitanja, sa pripadajucim rednim brojem
+	FITKolekcija<char*, int, 8> _odgovori;
+public:
+	Anketa(const char*pitanje, int tr)
+	{
+		int size = strlen(pitanje) + 1;
+		_pitanje = new char[size];
+		strcpy_s(_pitanje, size, pitanje);
+		_trajanje = tr;
+	}
+	Anketa(const Anketa&a)
+	{
+		int size = strlen(a._pitanje) + 1;
+		_pitanje = new char[size];
+		strcpy_s(_pitanje, size, a._pitanje);
+		_trajanje = a._trajanje;
+	}
+	~Anketa()
+	{
+		delete[]_pitanje; _pitanje = nullptr;
+	}
+	int GetTr() const{ return *_odgovori.GetTrenutno(); }
+	bool DodajOdgovor(const char*odg,int rednibroj)
+	{
+		for (int i = 0; i < *_odgovori.GetTrenutno(); i++)
+		{
+			if (strcmp(_odgovori.GetElement1(i), odg) == 0)
+			{
+				cout << "Ne mozete dodati isti odgovor." << endl;
+				return false;
+			}
+		}
+		if (*_odgovori.GetTrenutno() < _odgovori.GetMax())
+		{
+			_odgovori.SetElement1(odg, *_odgovori.GetTrenutno());
+			_odgovori.SetElement2(rednibroj, *_odgovori.GetTrenutno());
+			_odgovori.SetTretnutno(*_odgovori.GetTrenutno());
+			return true;
+		}
+	}
+	friend ostream&operator<<(ostream&COUT, const Anketa &a);
+	void UkloniOdgovor(int redbr)
+	{
+		int j = 0;
+		for (int i = 0; i < *_odgovori.GetTrenutno(); i++)
+		{
+			if (i != redbr)
+			{
+				_odgovori.SetElement1(_odgovori.GetElement1(i), j);
+				_odgovori.SetElement2(_odgovori.GetElement2(i), j);
+				j++;
+			}
+		}
+		delete[]_odgovori.GetElement1(*_odgovori.GetTrenutno()); 
+		_odgovori.SetTretnutno(*_odgovori.GetTrenutno()-2);
+	}
+	void operator++(int broj)
+	{
+		_trajanje += 1;
+	}
+	void operator++()
+	{
+		_trajanje += 1;
+	}
+};
+ostream&operator<<(ostream&COUT, const Anketa &a) {
+	COUT << "Pitanje:" << a._pitanje << endl;
+	COUT << "Trajanje:" << a._trajanje <<" "<<"minuta."<< endl;
+	for (int i = 0; i < *a._odgovori.GetTrenutno(); i++)
+	{
+		COUT << a._odgovori.GetElement1(i) << endl;
+		COUT << a._odgovori.GetElement2(i) << endl;
+	}
+	return COUT;
+}
+int main()
+{
+	FITKolekcija<int, int, 5> kolekcija;
+	kolekcija(1, 5);
+	kolekcija(3, 8);
+	kolekcija(6, 7);
+	kolekcija -= (3);
+	cout<<kolekcija[2]<<endl;
+	cout << kolekcija << endl;
+	Anketa a("U kojem gradu se nalazi fit?", 10);
+	a.DodajOdgovor("Mostar", 1);
+	a.DodajOdgovor("Sarajevo", 2);
+	a.DodajOdgovor("Tuzla", 3);
+	cout << a << endl;
+	a.UkloniOdgovor(1);
+	cout << a << endl;
+	++a;
+	cout << a << endl;
+
+	system("pause>0");
+	return 0;
+}

@@ -1,0 +1,452 @@
+#include<iostream>
+using namespace std;
+
+template<class T, int max>
+class Kolekcija
+{
+	T* _elementi;
+	int _trenutnoElemenata;
+public:
+	Kolekcija()
+	{
+		_elementi = nullptr;
+		_trenutnoElemenata = 0;
+	}
+	Kolekcija(const Kolekcija&k)
+	{
+		_elementi = new T[k._trenutnoElemenata + 1];
+		for (int i = 0; i < k._trenutnoElemenata; i++)
+		{
+			_elementi[i] = k._elementi[i];
+		}
+		_trenutnoElemenata = k._trenutnoElemenata;
+	}
+	~Kolekcija()
+	{
+		delete[]_elementi; _elementi = nullptr;
+	}
+	bool AddElemenat(T &t)
+	{
+		T *temp = new T[_trenutnoElemenata + 1];
+		for (int i = 0; i < _trenutnoElemenata; i++)
+		{
+			temp[i] = _elementi[i];
+		}
+		delete[]_elementi;
+		_elementi = temp;
+		_elementi[_trenutnoElemenata] = t;
+		_trenutnoElemenata++;
+		return true;
+	}
+	void UkloniElement(T &t)
+	{
+		T *temp = new T[_trenutnoElemenata -1];
+		for (int i = 0; i < _trenutnoElemenata; i++)
+		{
+			if(_elementi[i]!=t)
+				temp[i] = _elementi[i];
+		}
+		delete[]_elementi;
+		_elementi = temp;
+		_trenutnoElemenata--;
+	}
+	T GetElement(int lok)const { return _elementi[lok]; }
+	T*GetNiz() { return _elementi; }
+	T &GetElement(int lok) { return _elementi[lok]; }
+	int GetTr()const { return _trenutnoElemenata; }
+	friend ostream& operator<<<>(ostream&cout, Kolekcija<T, max>&k);
+};
+template<class T, int max>
+ostream& operator<<<>(ostream&cout, Kolekcija<T, max>&k) {
+	for (int i = 0; i < k._trenutnoElemenata; i++)
+	{
+		cout << k._elementi[i] << endl;
+	}
+	return cout;
+}
+class Prisustvo
+{
+	char* _brojIndeksa;
+	int _brojSati;
+public:
+	Prisustvo()
+	{
+		_brojIndeksa = new char[9];
+		strcpy_s(_brojIndeksa, 9, "IB170000");
+		_brojSati = 0;
+	}
+	Prisustvo(const char* brojIndeksa, int brojSati) : _brojSati(brojSati)
+	{
+		int size = strlen(brojIndeksa) + 1;
+		_brojIndeksa = new char[size];
+		strcpy_s(_brojIndeksa, size, brojIndeksa);
+	}
+	~Prisustvo()
+	{
+		delete[] _brojIndeksa;
+		_brojIndeksa = nullptr;
+	}
+	void operator+(int broj)
+	{
+		_brojSati += broj;
+	}
+	void operator+=(int broj)
+	{
+		_brojSati += broj;
+	}
+	bool operator==(const Prisustvo &p)
+	{
+		if (strcmp(_brojIndeksa, p._brojIndeksa) == 0 && _brojSati == p._brojSati)
+			return true;
+		return false;
+	}
+	bool operator<(Prisustvo &p)
+	{
+		int brojind = atoi(_brojIndeksa);
+		int brojind1 = atoi(p._brojIndeksa);
+		if (brojind < brojind1)
+			return true;
+		return false;
+	}
+	bool operator!=(const Prisustvo &p)
+	{
+		if (strcmp(_brojIndeksa, p._brojIndeksa) != 0 || _brojSati != p._brojSati)
+			return true;
+		return false;
+	}
+	char *GetIndex() {
+		return _brojIndeksa;
+	}
+	int BrojSati() { return _brojSati; }
+	void SetSate(int sati) { _brojSati += sati; }
+	void operator=(const Prisustvo &p)
+	{
+		_brojIndeksa = new char[strlen(p._brojIndeksa) + 1];
+		strcpy_s(_brojIndeksa, strlen(p._brojIndeksa) + 1, p._brojIndeksa);
+		_brojSati = p._brojSati;
+	}
+	friend ostream& operator<<(ostream&cout, const Prisustvo &p);
+};
+ostream& operator<<(ostream&cout, const Prisustvo &p)
+{
+	cout << p._brojIndeksa << endl;
+	cout << p._brojSati << endl;
+	return cout;
+}
+class Nastava
+{
+	char _datum[11];
+	char _tipNastave; //P ili V
+	int _odrzanoSati;
+	Prisustvo* _prisutni;
+	int _brojStudenata;
+public:
+	Nastava()
+	{
+		_brojStudenata = 0;
+		_prisutni = nullptr;
+		_odrzanoSati = 0;
+		_tipNastave = 'P';
+		strcpy_s(_datum, 11, "11/05/2018");
+	}
+	Nastava(const char*datum, char tipnastave, int odrsat)
+	{
+		strcpy_s(_datum, strlen(datum) + 1, datum);
+		_tipNastave = tipnastave;
+		_odrzanoSati = odrsat;
+	}
+	Nastava(const Nastava&n)
+	{
+		strcpy_s(_datum, 11, n._datum);
+		_tipNastave = n._tipNastave;
+		_odrzanoSati = n._odrzanoSati;
+		_prisutni = new Prisustvo[n._brojStudenata];
+		for (int i = 0; i < n._brojStudenata; i++)
+		{
+			_prisutni[i] = n._prisutni[i];
+		}
+		_brojStudenata = n._brojStudenata;
+	}
+	~Nastava()
+	{
+		delete[]_prisutni; _prisutni = nullptr;
+	}
+	void Sortiraj()
+	{
+		bool promjena = true;
+		if (_brojStudenata > 1)
+		{
+			do
+			{
+				promjena = false;
+				for (int i = 0; i < _brojStudenata - 1; i++)
+				{
+					if (_prisutni[i] < _prisutni[i + 1])
+					{
+						swap(_prisutni[i], _prisutni[i + 1]);
+						promjena = true;
+					}
+				}
+			} while (promjena);
+		}
+	}
+	void operator+=(const Prisustvo &p)
+	{
+		for (int i = 0; i < _brojStudenata; i++)
+		{
+			if (_prisutni[i] == p)
+			{
+				cout << "Ne mozete dodati isto prisustvo." << endl;
+				return;
+			}
+		}
+		Prisustvo *temp = new Prisustvo[_brojStudenata + 1];
+		for (int i = 0; i < _brojStudenata; i++)
+		{
+			temp[i] = _prisutni[i];
+		}
+		delete[]_prisutni;
+		_prisutni = temp;
+		_prisutni[_brojStudenata] = p;
+		_brojStudenata++;
+		Sortiraj();
+	}
+	void Remove(const Prisustvo &p)
+	{
+		Prisustvo *temp = new Prisustvo[_brojStudenata - 1];
+		for (int i = 0; i < _brojStudenata; i++)
+		{
+			if(_prisutni[i]!=p)
+				temp[i] = _prisutni[i];
+		}
+		delete[]_prisutni;
+		_prisutni = temp;
+		_brojStudenata--;
+		Sortiraj();
+	}
+	friend ostream& operator<<(ostream &cout, const Nastava &n);
+	bool operator-=(const char* brojindexa)
+	{
+		int j = 0;
+		Prisustvo *temp = new Prisustvo[_brojStudenata - 1];
+		for (int i = 0; i < _brojStudenata; i++)
+		{
+			if (strcmp(_prisutni[i].GetIndex(), brojindexa) != 0)
+			{
+				temp[j] = _prisutni[i];
+				j++;
+			}
+		}
+		delete[]_prisutni;
+		_prisutni = temp;
+		_brojStudenata--;
+		Sortiraj();
+		return true;
+	}
+	Prisustvo& operator[](const char*index)
+	{
+		for (int i = 0; i < _brojStudenata; i++)
+		{
+			if (strcmp(_prisutni[i].GetIndex(), index) == 0)
+			{
+				cout << "Ovaj student je prisustvovao nastavi." << endl;
+				return _prisutni[i];
+			}
+		}
+	}
+	Prisustvo& operator()(const char*index, int brojsati)
+	{
+		for (int i = 0; i < _brojStudenata; i++)
+		{
+			if (strcmp(_prisutni[i].GetIndex(), index) == 0)
+			{
+				if (_prisutni[i].BrojSati() == 0)
+				{
+					_prisutni[i].SetSate(brojsati);
+					return _prisutni[i];
+				}
+				else
+					return _prisutni[i];
+			}
+		}
+
+	}
+	friend Nastava operator+(Nastava &l, Nastava &d);
+	void operator=(const Nastava&n)
+	{
+		strcpy_s(_datum, 11, n._datum);
+		_tipNastave = n._tipNastave;
+		_odrzanoSati = n._odrzanoSati;
+		_prisutni = new Prisustvo[n._brojStudenata];
+		for (int i = 0; i < n._brojStudenata; i++)
+		{
+			_prisutni[i] = n._prisutni[i];
+		}
+		_brojStudenata = n._brojStudenata;
+	}
+	int GetBrSt() { return _brojStudenata; }
+	char *GetDatum() { return _datum; }
+	char GetTip() { return _tipNastave; }
+	Prisustvo* getniz()
+	{
+		return _prisutni;
+	}
+	Prisustvo &GetPrisutni(int lok)
+	{
+		return _prisutni[lok];
+	}
+	int GetOdrzanoSati() {
+		return _odrzanoSati;
+	}
+};
+Nastava operator+(Nastava &l, Nastava &d) {
+	Nastava n;
+	if (l._tipNastave != d._tipNastave)
+	{
+		cout << "Ne mozete sabirati objekete koji nisu istog tipa nastave." << endl;
+		return l;
+	}
+	n._brojStudenata = l._brojStudenata + d._brojStudenata;
+	n._prisutni = new Prisustvo[n._brojStudenata];
+	for (int i = 0; i < n._brojStudenata; i++)
+	{
+		if (i < l._brojStudenata)
+			n._prisutni[i] = l._prisutni[i];
+		else
+			n._prisutni[i] = d._prisutni[i];
+	}
+	strcpy_s(n._datum, 11, l._datum);
+	n._odrzanoSati = l._odrzanoSati + d._odrzanoSati;
+	n._tipNastave = l._tipNastave;
+	return n;
+}
+ostream& operator<<(ostream &cout, const Nastava &n) {
+	cout << n._datum << endl;
+	cout << n._odrzanoSati << endl;
+	cout << n._tipNastave << endl;
+	for (int i = 0; i < n._brojStudenata; i++)
+	{
+		cout << n._prisutni[i] << endl;
+	}
+	return cout;
+}
+class Predmet
+{
+	char* _naziv;
+	int _godinaStudija;
+	Kolekcija<Nastava, 90> _odrzanaNastava;
+public:
+	Predmet(const char* naziv, int godinaStudija) : _godinaStudija(godinaStudija)
+	{
+		int size = strlen(naziv) + 1;
+		_naziv = new char[size];
+		strcpy_s(_naziv, size, naziv);
+	}
+	~Predmet()
+	{
+		delete[] _naziv;
+		_naziv = nullptr;
+	}
+	void Evidencija(Nastava &n)
+	{
+		_odrzanaNastava.AddElemenat(n);
+	}
+	void AddPrisustvo(const char* datum,char tip,const char*broj, int brsat)
+	{
+		Prisustvo d(broj, brsat);
+		for (int i = 0; i < _odrzanaNastava.GetNiz()->GetBrSt(); i++)
+		{
+			if (strcmp(_odrzanaNastava.GetNiz()[i].GetDatum(), datum) == 0 && _odrzanaNastava.GetNiz()[i].GetTip() == tip)
+			{
+				_odrzanaNastava.GetElement(i) += d;
+			}
+		}
+	}
+	bool RemovePrisustvo(const char* datum, char tip, const char*broj, int brsat)
+	{
+		Prisustvo d(broj, brsat);
+		for (int i = 0; i < _odrzanaNastava.GetNiz()->GetBrSt(); i++)
+		{
+			if (strcmp(_odrzanaNastava.GetNiz()[i].GetDatum(), datum) == 0 && _odrzanaNastava.GetNiz()[i].GetTip() == tip)
+			{
+				_odrzanaNastava.GetElement(i).Remove(d);
+				return true;
+			}
+		}
+	}
+	Prisustvo& GetPrisustvo(const char*brojindex)
+	{
+		for (int i = 0; i < _odrzanaNastava.GetTr(); i++)
+		{
+			for (int j = 0; j < _odrzanaNastava.GetElement(i).GetBrSt(); j++)
+			{
+				if (strcmp(_odrzanaNastava.GetElement(i).GetPrisutni(j).GetIndex(), brojindex) == 0)
+					return _odrzanaNastava.GetElement(i).GetPrisutni(j);
+			}
+		}
+	}
+	void IspisPris(char nastava)
+	{
+		for (int i = 0; i < _odrzanaNastava.GetTr(); i++)
+		{
+			if (_odrzanaNastava.GetElement(i).GetTip() == nastava)
+			{
+				for (int j = 0; j < _odrzanaNastava.GetElement(i).GetBrSt(); j++)
+				{
+			
+					float procenat = (_odrzanaNastava.GetElement(i).GetOdrzanoSati() / _odrzanaNastava.GetElement(i).GetPrisutni(j).BrojSati())*10;
+					cout << _odrzanaNastava.GetElement(i).GetPrisutni(j).GetIndex() << "   " <<
+						_odrzanaNastava.GetElement(i).GetPrisutni(j).BrojSati() << "/" << _odrzanaNastava.GetElement(i).GetOdrzanoSati() << "  " << procenat << "%" << endl;
+				}
+			}
+		}
+	}
+	friend ostream& operator<<(ostream&, const Predmet&);
+};
+ostream& operator<<(ostream& cout, const Predmet& p)
+{
+	cout << "Predmet: " << p._naziv << endl;
+	cout << "Godina studija: " << p._godinaStudija << endl;
+	for (int i = 0; i < p._odrzanaNastava.GetTr(); i++)
+	{
+		cout << p._odrzanaNastava.GetElement(i) << endl;
+	}
+	return cout;
+}
+int main()
+{
+	Prisustvo a("170058", 2);
+	Prisustvo d("170001", 0);
+	Prisustvo b("170057", 1);
+	Prisustvo c("170059", 3);
+	cout << a << b << c << endl;
+	Nastava dns("11/05/2018", 'V', 3);
+	Nastava juc("12/05/2018", 'V', 3);
+	dns += a;
+	dns += b;
+	dns += c;
+	dns += d;
+	cout << dns << endl;
+	dns -= "170059";                               
+	cout << dns << endl;
+	cout << dns["170058"] << endl;
+	cout << dns("170001", 5) << endl;
+	cout << "------------------------------------" << endl;
+	cout << "sut" << endl;
+	Nastava sut = dns + juc;
+	cout << sut << endl;
+	Kolekcija<Nastava, 90> k;
+	Predmet p("Pr3", 2);
+	p.Evidencija(dns);
+	p.Evidencija(juc);
+	cout << p << endl;
+	p.AddPrisustvo("11/05/2018", 'V', "IB170121", 1);
+	cout << p << endl;
+	cout << "------------------------------" << endl;
+	p.RemovePrisustvo("11/05/2018", 'V', "IB170121", 1);
+	cout << p << endl;
+	cout << p.GetPrisustvo("170058") << endl;
+	p.IspisPris('V');
+	system("pause>0");
+	return 0;
+}

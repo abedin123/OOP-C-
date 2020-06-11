@@ -1,0 +1,551 @@
+#include<iostream>
+#include<regex>
+#include<string>
+using namespace std;
+char* AlocirajNizKaraktera(const char *temp)
+{
+	if (temp == nullptr)
+		return nullptr;
+	int size = strlen(temp) + 1;
+	char *vrati = new char[size];
+	strcpy_s(vrati, size, temp);
+	return vrati;
+}
+class NedozvoljenaOperacija : public exception {
+	int linijaKoda;
+public:
+	NedozvoljenaOperacija(const char * poruka, int lin) :exception(poruka) {
+		linijaKoda = lin;
+	}
+	void ErrorInfo() { cout << "Greska: " << exception::what() << " Linija koda: " << linijaKoda << endl; }
+};
+
+class Proizvod
+{
+protected:
+	char _sifra[10];
+	char* _naziv;
+	double _cijena;
+	double _popust;
+	int _kolicina;
+public:
+	Proizvod(const char* sifra, const char* naziv, double cijena, int kolicina, double popust = 0)
+	{
+		if (_cijena < 0||_kolicina<0||_popust<0)
+			throw NedozvoljenaOperacija("Cijena,kolicina ili popust ima nedozvoljenu vrijednost.", __LINE__);
+		strncpy_s(_sifra, sifra, _TRUNCATE);
+
+		int size = strlen(naziv) + 1;
+		_naziv = new char[size];
+		strcpy_s(_naziv, size, naziv);
+
+		_cijena = cijena;
+		_kolicina = kolicina;
+		_popust = popust;
+	}
+	Proizvod(const Proizvod&p)
+	{
+		strcpy_s(_sifra, 10, p._sifra);
+		_naziv = AlocirajNizKaraktera(p._naziv);
+		_cijena = p._cijena;
+		_popust = p._popust;
+		_kolicina = p._kolicina;
+	}
+	void operator=(const Proizvod&p)
+	{
+		delete[]_naziv; _naziv = nullptr;
+		strcpy_s(_sifra, 10, p._sifra);
+		_naziv = AlocirajNizKaraktera(p._naziv);
+		_cijena = p._cijena;
+		_popust = p._popust;
+		_kolicina = p._kolicina;
+	}
+	char *GetSifra()
+	{
+		return _sifra;
+	}
+	int GetKolicina()const {
+		return _kolicina;
+	}
+	~Proizvod()
+	{
+		delete[] _naziv;
+		_naziv = nullptr;
+	}
+	virtual void Info()const {
+		cout << "Sifra: " << _sifra << endl;
+		cout << "Naziv proizvoda: " << _naziv << endl;
+		cout << "Cijena proizvoda: " << _cijena << endl;
+		cout << "Popust na proizvod: " << _popust << endl;
+		cout << "Dostupono proizvoda: " << _kolicina << endl;
+	}
+	bool operator==(const Proizvod &o) {
+		if (strcmp(_naziv, o._naziv) == 0 && strcmp(_sifra, o._sifra) == 0 && _cijena == o._cijena)
+			return true;
+		return false;
+	}
+	int GetCijenu()const { return _cijena; }
+	double GetPopust()const { return _popust; }
+	int GetKolicina() { return _kolicina; }
+};
+
+class Odjeca:public Proizvod
+{
+	char*_velicine;
+	char* _boje;
+	char _kategorija[50];
+public:
+	Odjeca(const char* sifra, const char* naziv, double cijena, int kolicina, double popust, const char*velicine, const char*boje, const char*kategorija) :Proizvod(sifra, naziv, cijena, kolicina, popust)
+	{
+		_velicine = AlocirajNizKaraktera(velicine);
+		_boje = AlocirajNizKaraktera(boje);
+		strcpy_s(_kategorija, 50, kategorija);
+	}
+	Odjeca(const Odjeca&p) :Proizvod(p)
+	{
+		_velicine = AlocirajNizKaraktera(p._velicine);
+		_boje = AlocirajNizKaraktera(p._boje);
+		strcpy_s(_kategorija, 50, p._kategorija);
+	}
+	void Info()const {
+		Proizvod::Info();
+		cout << "Velicine odjece: " << _velicine << endl;
+		cout << "Boje: " << _boje << endl;
+		cout << "Kategorija: " << _kategorija << endl;
+	}
+	bool operator==(const Odjeca &o) {
+		if (strcmp(_naziv, o._naziv) == 0 && strcmp(_sifra, o._sifra) == 0 && _cijena == o._cijena&&strcmp(_boje,o._boje)==0)
+			return true;
+		return false;
+	}
+};
+
+class Katalog
+{
+	char* _naslov;
+	char* _vrijediDo;
+	Proizvod* _proizvodi[100];
+	int _trenutnoProizvoda;
+public:
+	Katalog(const char* naslov,const char* vrijediDo)
+	{
+		string pravilo = "(\\d{2})\\.(\\d{2})\\.(\\d{4})";
+		regex obj(pravilo);
+		if (regex_match(vrijediDo, obj))
+			_vrijediDo = AlocirajNizKaraktera(vrijediDo);
+		else
+			throw NedozvoljenaOperacija("Datum nije u zadanom formatu.", __LINE__);
+		int size = strlen(naslov) + 1;
+		_naslov = new char[size];
+		strcpy_s(_naslov, size, naslov);
+
+
+		for (size_t i = 0; i < 100; i++)
+		{
+			_proizvodi[i] = nullptr;
+		}
+
+		_trenutnoProizvoda = 0;
+	}
+	~Katalog()
+	{
+		delete[] _naslov;
+		_naslov = nullptr;
+
+		delete[] _vrijediDo;
+		_vrijediDo = nullptr;
+
+		for (size_t i = 0; i < _trenutnoProizvoda; i++)
+		{
+			delete _proizvodi[i];
+			_proizvodi[i] = nullptr;
+		}
+	}
+	bool DodajProizvod(Proizvod &p)
+	{
+		if (_trenutnoProizvoda == 100)
+			return false;
+		for (int i = 0; i < _trenutnoProizvoda; i++)
+		{
+			if (strcmp(_proizvodi[i]->GetSifra(), p.GetSifra()) == 0)
+				return false;
+		}
+		Proizvod *k = &p;
+		Odjeca *o = dynamic_cast<Odjeca*>(k);
+		if (o != nullptr)
+		{
+			cout << "Objekat izvedene klase." << endl;
+			_proizvodi[_trenutnoProizvoda] = new Odjeca(*o);
+			_trenutnoProizvoda++;
+			return true;
+		}
+		else
+		{
+			cout << "Objekat je bazne klase." << endl;
+			_proizvodi[_trenutnoProizvoda] = new Proizvod(p);
+			_trenutnoProizvoda++;
+			return true;
+		}
+	}
+	void UkloniProizvod(const char*sifra)
+	{
+		for (int i = 0; i < _trenutnoProizvoda; i++)
+		{
+			if (strcmp(_proizvodi[i]->GetSifra(), sifra) == 0)
+			{
+				Proizvod *p = _proizvodi[i];
+				_proizvodi[i] = _proizvodi[_trenutnoProizvoda - 1];
+				_proizvodi[_trenutnoProizvoda - 1] = p;
+				delete _proizvodi[_trenutnoProizvoda - 1];
+				_proizvodi[_trenutnoProizvoda - 1]=nullptr;
+				_trenutnoProizvoda--;
+				return;
+			}
+		}
+		throw NedozvoljenaOperacija("Ne postoji artikal sa tom sifrom.", __LINE__);
+	}
+	friend ostream&operator<<(ostream&cout, const Katalog&k);
+};
+ostream&operator<<(ostream&cout, const Katalog&k) {
+	cout << "Naslov kataloga: " << k._naslov << endl;
+	cout << "Vrijedi do: " << k._vrijediDo << endl;
+	for (int i = 0; i < k._trenutnoProizvoda; i++)
+	{
+		cout << "---------------------------------------------------" << endl;
+		k._proizvodi[i]->Info();
+	}
+	return cout;
+}
+
+class Narudzba
+{
+	int _brojNarudzbe;
+	char* _datumIsporuke;
+	Proizvod* _naruceniProizvodi[100];
+	int _brojProizvoda;
+	bool otkazana;
+public:
+	Narudzba()
+	{
+		_datumIsporuke = nullptr;
+		for (int i = 0; i < _brojProizvoda; i++)
+		{
+			_naruceniProizvodi[i] = nullptr;
+		}
+		_brojNarudzbe = 0;
+		_brojProizvoda = 0;
+		otkazana = false;
+	}
+	Narudzba(int brojnarudzbe, const char*datumIsporuke, bool otkazana)
+	{
+		string pravilo = "(\\d{2})\\.(\\d{2})\\.(\\d{4})";
+		regex obj(pravilo);
+		if (regex_match(datumIsporuke, obj))
+			_datumIsporuke = AlocirajNizKaraktera(datumIsporuke);
+		else
+			throw NedozvoljenaOperacija("Datum nije u zadanom formatu.", __LINE__);
+		_brojNarudzbe = brojnarudzbe;
+		_brojProizvoda = 0;
+		otkazana = otkazana;
+		for (int i = 0; i < 100; i++)
+		{
+			_naruceniProizvodi[i] = nullptr;
+		}
+	}
+	Narudzba(const Narudzba&n)
+	{
+		_brojNarudzbe = n._brojNarudzbe;
+		_datumIsporuke = AlocirajNizKaraktera(n._datumIsporuke);
+		for (int i = 0; i < n._brojProizvoda; i++)
+		{
+			Odjeca *o = dynamic_cast<Odjeca*>(n._naruceniProizvodi[i]);
+			if (o != nullptr)
+			{
+				_naruceniProizvodi[i] = new Odjeca(*o);
+			}
+			else
+			{
+				_naruceniProizvodi[i] = new Proizvod(*n._naruceniProizvodi[i]);
+			}
+		}
+		_brojProizvoda = n._brojProizvoda;
+	}
+	void operator=(const Narudzba&n)
+	{
+		if (this != nullptr)
+		{
+			if (_datumIsporuke != nullptr)
+			{
+				delete[]_datumIsporuke; _datumIsporuke = nullptr;
+			}
+			for (int i = 0; i < _brojProizvoda; i++)
+			{
+				if (_naruceniProizvodi[i] != nullptr)
+				{
+					delete _naruceniProizvodi[i];
+					_naruceniProizvodi[i] = nullptr;
+				}
+			}
+		}
+		_brojNarudzbe = n._brojNarudzbe;
+		_datumIsporuke = AlocirajNizKaraktera(n._datumIsporuke);
+		for (int i = 0; i < n._brojProizvoda; i++)
+		{
+			Odjeca *o = dynamic_cast<Odjeca*>(n._naruceniProizvodi[i]);
+			if (o != nullptr)
+			{
+				_naruceniProizvodi[i] = new Odjeca(*o);
+			}
+			else
+			{
+				_naruceniProizvodi[i] = new Proizvod(*n._naruceniProizvodi[i]);
+			}
+		}
+		_brojProizvoda = n._brojProizvoda;
+	}
+	~Narudzba()
+	{
+		delete[]_datumIsporuke;
+		_datumIsporuke = nullptr;
+		for (int i = 0; i < _brojProizvoda; i++)
+		{
+			delete _naruceniProizvodi[i];
+			_naruceniProizvodi[i]=nullptr;
+		}
+	}
+	bool DodajProizvod(Proizvod &p)
+	{
+		if (p.GetKolicina() == 0)
+			throw NedozvoljenaOperacija("Proizvod vise nije dostupan.", __LINE__);
+		if (_brojProizvoda == 100)
+			return false;
+		Proizvod *k = &p;
+		Odjeca *o = dynamic_cast<Odjeca*>(k);
+		if (o != nullptr)
+		{
+			cout << "Objekat izvedene klase." << endl;
+			_naruceniProizvodi[_brojProizvoda] = new Odjeca(*o);
+			_brojProizvoda++;
+			return true;
+		}
+		else
+		{
+			cout << "Objekat bazne klase." << endl;
+			_naruceniProizvodi[_brojProizvoda] = new Proizvod(p);
+			_brojProizvoda++;
+			return true;
+		}
+	}
+	void UkloniProizvod(Proizvod &n)
+	{
+		int brojproiz = _brojProizvoda;
+		for (int i = 0; i < _brojProizvoda; i++)
+		{
+			Proizvod *pro = &n;
+			Odjeca *o = dynamic_cast<Odjeca*>(pro);
+			if (o != nullptr)
+			{
+				if (_naruceniProizvodi[i] != nullptr)
+				{
+					if (*_naruceniProizvodi[i] == *o)
+					{
+						Proizvod *proiz = _naruceniProizvodi[i];
+						_naruceniProizvodi[i] = _naruceniProizvodi[_brojProizvoda - 1];
+						_naruceniProizvodi[_brojProizvoda - 1] = proiz;
+						delete _naruceniProizvodi[_brojProizvoda - 1];
+						_naruceniProizvodi[_brojProizvoda - 1] = nullptr;
+						brojproiz--;
+						i--;
+					}
+				}
+			}
+			else
+			{
+				if (_naruceniProizvodi[i] != nullptr)
+				{
+					if (*_naruceniProizvodi[i] == n)
+					{
+						Proizvod *proiz = _naruceniProizvodi[i];
+						_naruceniProizvodi[i] = _naruceniProizvodi[_brojProizvoda - 1];
+						_naruceniProizvodi[_brojProizvoda - 1] = proiz;
+						delete _naruceniProizvodi[_brojProizvoda - 1];
+						_naruceniProizvodi[_brojProizvoda - 1] = nullptr;
+						brojproiz--;
+						i--;
+					}
+				}
+			}
+		}
+		_brojProizvoda = brojproiz;
+	}
+	double UkupnaCijenaNarudzbe()
+	{
+		double suma = 0;
+		for (int i = 0; i < _brojProizvoda; i++)
+		{
+			double posto = _naruceniProizvodi[i]->GetPopust() / 100;
+			double oduzeti = _naruceniProizvodi[i]->GetCijenu()*posto;
+			suma += (_naruceniProizvodi[i]->GetCijenu() - oduzeti)*_naruceniProizvodi[i]->GetKolicina();
+		}
+		return suma;
+	}
+	int GetBrojNarudzbe()const { return _brojNarudzbe; }
+	bool &GetOtkazana() { return otkazana; }
+	int GetBrojProizvoda()const { return _brojProizvoda; }
+	Proizvod &GetProizvod(int lokacija)const { return *_naruceniProizvodi[lokacija]; }
+	friend ostream&operator<<(ostream&cout, const Narudzba&n);
+};
+ostream&operator<<(ostream&cout, const Narudzba&n) {
+	cout << "Broj narudzbe: " << n._brojNarudzbe << endl;
+	cout << "Datum isporuke: " << n._datumIsporuke << endl;
+	for (int i = 0; i < n._brojProizvoda; i++)
+	{
+		cout << "------------------------------------------" << endl;
+		n._naruceniProizvodi[i]->Info();
+	}
+	return cout;
+}
+
+class Prodavac
+{
+	char* _imePrezime;
+	Narudzba* _listaNarudzbi;
+	int _brojNarudzbi;
+public:
+	Prodavac(const char*imeprezime)
+	{
+		_imePrezime = AlocirajNizKaraktera(imeprezime);
+		_brojNarudzbi = 0;
+	}
+	~Prodavac()
+	{
+		delete[]_imePrezime; _imePrezime = nullptr;
+		delete[]_listaNarudzbi; _listaNarudzbi = nullptr;
+	}
+	void DodajNarudzbu(Narudzba &n)
+	{
+		Narudzba *temp = new Narudzba[_brojNarudzbi + 1];
+		for (int i = 0; i < _brojNarudzbi; i++)
+		{
+			temp[i] = _listaNarudzbi[i];
+		}
+		delete[]_listaNarudzbi;
+		_listaNarudzbi = temp;
+		_listaNarudzbi[_brojNarudzbi] = n;
+		_brojNarudzbi++;
+	}
+	void OtkaziNarudzbu(int brojnarudzbe)
+	{
+		for (int i = 0; i < _brojNarudzbi; i++)
+		{
+			if (_listaNarudzbi[i].GetBrojNarudzbe() == brojnarudzbe)
+			{
+				_listaNarudzbi[i].GetOtkazana() = true;
+			}
+		}
+	}
+	void NajProdavaniji()
+	{
+		Odjeca *najprodavaniji = nullptr;
+		Proizvod*najprod = nullptr;
+		if (&_listaNarudzbi[0].GetProizvod(0) != nullptr)
+			najprod = &_listaNarudzbi[0].GetProizvod(0);
+		else
+			return;
+		for (int i = 0; i < _brojNarudzbi; i++)
+		{
+			for (int j = 0; j < _listaNarudzbi[i].GetBrojProizvoda(); j++)
+			{
+				if (_listaNarudzbi[i].GetProizvod(j).GetKolicina() > najprod->GetKolicina())
+					najprod = &_listaNarudzbi[i].GetProizvod(j);
+			}
+			Odjeca *o = dynamic_cast<Odjeca*>(najprod);
+			if (o != nullptr)
+			{
+				najprodavaniji = o;
+				najprod = nullptr;
+			}
+			else
+			{
+				najprod = najprod;
+				najprodavaniji = nullptr;
+			}
+			if (najprod != nullptr)
+			{
+				cout << "Objekat bazne klase." << endl;
+				cout << "Najprodavaniji proizvod za narudzbu broj " << i + 1 << " je:";
+				najprod->Info();
+				if (&_listaNarudzbi[1].GetProizvod(0) != nullptr)
+					najprod = &_listaNarudzbi[1].GetProizvod(0);
+				else
+					return;
+			}
+			else
+			{
+				cout << "Objekat izvedene klase." << endl;
+				cout << "Najprodavaniji proizvod za narudzbu broj " << i + 1 << " je:";
+				najprodavaniji->Info();
+				najprodavaniji = nullptr;
+				if (&_listaNarudzbi[1].GetProizvod(0) != nullptr)
+					najprod = &_listaNarudzbi[1].GetProizvod(0);
+				else
+					return;
+			}
+		}
+	}
+	friend ostream&operator<<(ostream&cout, const Prodavac&p);
+};
+ostream&operator<<(ostream&cout, const Prodavac&p) {
+	cout << "Ime i prezime prodavaca: " << p._imePrezime << endl;
+	cout << "Otkazane narudzbe: " << endl;
+	for (int i = 0; i < p._brojNarudzbi; i++)
+	{
+		if (p._listaNarudzbi[i].GetOtkazana() == true)
+			cout << p._listaNarudzbi[i] << endl;
+	}
+	cout << "Aktivne narudzbe: " << endl;
+	for (int i = 0; i < p._brojNarudzbi; i++)
+	{
+		if (p._listaNarudzbi[i].GetOtkazana() != true)
+			cout << p._listaNarudzbi[i] << endl;
+	}
+	return cout;
+}
+int main()
+{
+	try
+	{
+		Proizvod p("112233", "Patike", 20, 1, 0);
+		Proizvod p1("112233", "Natike", 20, 11, 0);
+		Odjeca o("223311", "Jakna", 10, 1, 0,"X,XL","Plava","NEZ");
+		Odjeca odjec("223555", "Treca odjeca", 10, 2, 0, "X,XL", "Plava", "NEZ");
+		Katalog k("Katalog", "11.12.2018");
+		k.DodajProizvod(o);
+		k.DodajProizvod(p);
+		k.DodajProizvod(odjec);
+		k.UkloniProizvod("223311");
+		//cout << k << endl;
+		Narudzba n(1, "11.22.2018", false);
+		n.DodajProizvod(o);
+		n.DodajProizvod(p);
+		//n.DodajProizvod(p1);
+		n.DodajProizvod(odjec);
+		//n.UkloniProizvod(p);
+		//cout << n << endl;
+		Prodavac pro("Abedin Halilovic");
+		pro.DodajNarudzbu(n);
+		pro.OtkaziNarudzbu(1);
+		cout << pro << endl;
+		pro.NajProdavaniji();
+		
+	}
+	catch (NedozvoljenaOperacija&exe)
+	{
+		exe.ErrorInfo();
+	}
+
+	system("pause");
+	return 0;
+}
+
+

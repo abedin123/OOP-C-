@@ -1,0 +1,663 @@
+#include<iostream>
+#include<string>
+#include<regex>
+
+using namespace std;
+char *AlocirajNiz(const char*nesto)
+{
+	if (nesto == nullptr)
+		return nullptr;
+	int size = strlen(nesto) + 1;
+	char *temp = new char[size];
+	strcpy_s(temp, size, nesto);
+	return temp;
+}
+class NedozvoljenaOperacija : public exception
+{
+	int _linijaKoda;
+public:
+	NedozvoljenaOperacija(const char* poruka, int linijaKoda) : exception(poruka)
+	{
+		_linijaKoda = linijaKoda;
+	}
+
+	void Info()
+	{
+		cout << "Greska u liniji koda " << _linijaKoda << ": " << exception::what() << endl;
+	}
+};
+
+template<class T1, class T2>
+class FITKolekcija
+{
+	T1* _elementi1;
+	T2* _elementi2;
+	int _trenutno;
+public:
+	FITKolekcija()
+	{
+		_elementi1 = nullptr;
+		_elementi2 = nullptr;
+		_trenutno = 0;
+	}
+	~FITKolekcija()
+	{
+		delete[]_elementi1;
+		delete[]_elementi2;
+		_elementi1 = nullptr;
+		_elementi2 = nullptr;
+	}
+	FITKolekcija(const FITKolekcija&fit)
+	{
+		_trenutno = fit._trenutno;
+		_elementi1 = new T1[_trenutno];
+		_elementi2 = new T2[_trenutno];
+		for (int i = 0; i < _trenutno; i++)
+		{
+			_elementi1[i] = fit._elementi1[i];
+			_elementi2[i] = fit._elementi2[i];
+		}
+	}
+	void operator=(const FITKolekcija&fit)
+	{
+		delete[]_elementi1; _elementi1 = nullptr;
+		delete[]_elementi2; _elementi2 = nullptr;
+		_trenutno = fit._trenutno;
+		_elementi1 = new T1[_trenutno];
+		_elementi2 = new T2[_trenutno];
+		for (int i = 0; i < _trenutno; i++)
+		{
+			_elementi1[i] = fit._elementi1[i];
+			_elementi2[i] = fit._elementi2[i];
+		}
+	}
+	void AddElement(T1 t, T2 t1)
+	{
+		T1 *temp = new T1[_trenutno + 1];
+		T2 *temp1 = new T2[_trenutno + 1];
+		for (int i = 0; i < _trenutno; i++)
+		{
+			temp[i] = _elementi1[i];
+			temp1[i] = _elementi2[i];
+		}
+		delete[]_elementi1;
+		delete[]_elementi2;
+		_elementi1 = temp;
+		_elementi2 = temp1;
+		_elementi1[_trenutno] = t;
+		_elementi2[_trenutno] = t1;
+		_trenutno++;
+	}
+	T1&GetElement1(int lok)const { return _elementi1[lok]; }
+	T2&GetElement2(int lok)const { return _elementi2[lok]; }
+	int GetTrenutno()const { return _trenutno; }
+	friend ostream&operator<<<>(ostream&cout, FITKolekcija<T1, T2>&fit);
+};
+template<class T1, class T2>
+ostream&operator<<<>(ostream&cout, FITKolekcija<T1, T2>&fit) {
+	for (int i = 0; i < fit._trenutno; i++)
+	{
+		cout << fit._elementi1[i] << " - " << fit._elementi2[i] << endl;
+	}
+	return cout;
+}
+
+enum Kategorija { GameChallenge, InnovationChallenge, MobileChallenge, SQLChallenge, CodingChallenge };
+const char* kategorija[]{ "GameChallenge", "InnovationChallenge", "MobileChallenge", "SQLChallenge", "CodingChallenge2" };
+
+class Osoba
+{
+protected:
+	char* _ime;
+	char* _prezime;
+	int _godiste;
+public:
+	Osoba()
+	{
+		_ime = nullptr;
+		_prezime = nullptr;
+		_godiste = 0;
+	}
+	Osoba(const char* ime, const char* prezime, int godiste)
+	{
+		int vel = strlen(ime) + 1;
+		_ime = new char[vel];
+		strcpy_s(_ime, vel, ime);
+
+		vel = strlen(prezime) + 1;
+		_prezime = new char[vel];
+		strcpy_s(_prezime, vel, prezime);
+
+		_godiste = godiste;
+	}
+	Osoba(const Osoba&o)
+	{
+		_ime = AlocirajNiz(o._ime);
+		_prezime = AlocirajNiz(o._prezime);
+		_godiste = o._godiste;
+	}
+	void operator=(const Osoba&o)
+	{
+		delete[]_ime; _ime = nullptr;
+		delete[]_prezime; _prezime = nullptr;
+		_ime = AlocirajNiz(o._ime);
+		_prezime = AlocirajNiz(o._prezime);
+		_godiste = o._godiste;
+	}
+	virtual void Info()const = 0;
+	~Osoba()
+	{
+		delete[] _ime;
+		_ime = nullptr;
+
+		delete[] _prezime;
+		_prezime = nullptr;
+	}
+};
+
+class Ucesnik :public Osoba
+{
+protected:
+	char* _email;
+	string password; //Najmanje 5 karaktera, kombinacija brojeva i velikih slova
+	string _obrazovnaInstitucija;
+public:
+	Ucesnik() :Osoba()
+	{
+		_email = nullptr;
+	}
+	Ucesnik(const char* ime, const char* prezime, int godiste, const char*email, string pass, string obrazovna) :Osoba(ime, prezime, godiste)
+	{
+		string pravilo = "(?=.{5,})(?=.+[A-Z])(?=.+[0-9])(?=.+[a-z])";
+		regex obj(pravilo);
+		if (regex_search(pass, obj))
+			password = pass;
+		else
+			throw NedozvoljenaOperacija("Password mora imati najmanje 5 karaktera,brojeve i mala i velika slova.", __LINE__);
+		_email = AlocirajNiz(email);
+		_obrazovnaInstitucija = obrazovna;
+	}
+	Ucesnik(const Ucesnik&u) :Osoba(u)
+	{
+		_email = AlocirajNiz(u._email);
+		password = u.password;
+		_obrazovnaInstitucija = u._obrazovnaInstitucija;
+	}
+	void operator=(const Ucesnik&u)
+	{
+		delete[]_ime; _ime = nullptr;
+		delete[]_prezime; _prezime = nullptr;
+		_ime = AlocirajNiz(u._ime);
+		_prezime = AlocirajNiz(u._prezime);
+		_godiste = u._godiste;
+		_email = AlocirajNiz(u._email);
+		password = u.password;
+		_obrazovnaInstitucija = u._obrazovnaInstitucija;
+	}
+	~Ucesnik()
+	{
+		delete[]_email; _email = nullptr;
+	}
+	virtual void Info()const {
+		cout << "Ime: " << _ime << endl;
+		cout << "Prezime: " << _prezime << endl;
+		cout << "Godiste: " << _godiste << endl;
+		cout << "Email: " << _email << endl;
+		cout << "Password: " << password << endl;
+		cout << "Obrazovna institucija: " << _obrazovnaInstitucija << endl;
+	}
+	bool operator==(const Ucesnik&u)
+	{
+		if (strcmp(_ime, u._ime) == 0 && strcmp(_prezime, u._prezime) == 0 && strcmp(_email, u._email) == 0)
+			return true;
+		return false;
+	}
+	char *GetIme()const { return _ime; }
+};
+
+class ClanKomisije :public Ucesnik {
+	char* _pozicija; //Radno mjesto u firmi
+	string _firma;
+public:
+	ClanKomisije() :Ucesnik()
+	{
+		_pozicija = nullptr;
+	}
+	ClanKomisije(const char* ime, const char* prezime, int godiste, const char*email, string pass, string obrazovna, const char*pozicija, string firma) :Ucesnik(ime, prezime, godiste, email, pass, obrazovna)
+	{
+		_pozicija = AlocirajNiz(pozicija);
+		_firma = firma;
+	}
+	ClanKomisije(const ClanKomisije&clan) :Ucesnik(clan)
+	{
+		_pozicija = AlocirajNiz(clan._pozicija);
+		_firma = clan._firma;
+	}
+	void operator=(const ClanKomisije&u)
+	{
+		delete[]_pozicija; _pozicija = nullptr;
+		_pozicija = AlocirajNiz(u._pozicija);
+		_firma = u._firma;
+		delete[]_ime; _ime = nullptr;
+		delete[]_prezime; _prezime = nullptr;
+		_ime = AlocirajNiz(u._ime);
+		_prezime = AlocirajNiz(u._prezime);
+		_godiste = u._godiste;
+		_email = AlocirajNiz(u._email);
+		password = u.password;
+		_obrazovnaInstitucija = u._obrazovnaInstitucija;
+		delete[]_ime; _ime = nullptr;
+		delete[]_prezime; _prezime = nullptr;
+		_ime = AlocirajNiz(u._ime);
+		_prezime = AlocirajNiz(u._prezime);
+		_godiste = u._godiste;
+	}
+	~ClanKomisije()
+	{
+		delete[]_pozicija;
+		_pozicija = nullptr;
+	}
+	char *GetIme()const { return _ime; }
+	friend ostream&operator<<(ostream&cout, const ClanKomisije&c);
+};
+ostream&operator<<(ostream&cout, const ClanKomisije&c) {
+	c.Ucesnik::Info();
+	cout << "Pozicija: " << c._pozicija << endl;
+	cout << "Firma: " << c._firma << endl;
+	return cout;
+}
+//Prijave koje ne ukljucuju izradu i predaju projekata (kategorije: SQLChallenge i CodingChallenge)
+class Prijava {
+protected:
+	string _datum;
+	Kategorija _kategorija;
+	FITKolekcija<Ucesnik, bool> _tim;
+public:
+	Prijava(string datum, Kategorija kat)
+	{
+		string pravilo = "(\\d{2})\\.(\\d{2})\\.(\\d{4})";
+		regex obj(pravilo);
+		if (regex_match(datum, obj))
+			_datum = datum;
+		else
+			throw NedozvoljenaOperacija("Nije validan format datuma.", __LINE__);
+		_kategorija = kat;
+	}
+	Prijava(const Prijava&p)
+	{
+		_datum = p._datum;
+		_kategorija = p._kategorija;
+		_tim = p._tim;
+	}
+	void operator=(const Prijava&p)
+	{
+		_datum = p._datum;
+		_kategorija = p._kategorija;
+		_tim = p._tim;
+	}
+	void DodajClana(Ucesnik &u, bool vodja)
+	{
+		if (_kategorija == SQLChallenge || _kategorija == CodingChallenge)
+		{
+			for (int i = 0; i < _tim.GetTrenutno(); i++)
+			{
+				if (_tim.GetElement1(i) == u)
+					throw NedozvoljenaOperacija("Ne mozete dodati dva ista ucesnika.", __LINE__);
+			}
+			for (int i = 0; i < _tim.GetTrenutno(); i++)
+			{
+				if (_tim.GetElement2(i) == true && vodja == true)
+					throw NedozvoljenaOperacija("Ne moze tim imati dvojicu vodja.", __LINE__);
+			}
+			if (_tim.GetTrenutno() < 2)
+			{
+				_tim.AddElement(u, vodja);
+			}
+			else
+				cout << "Ne mozete dodati vise od 2 clana u ove kategorije." << endl;
+		}
+		if (_kategorija == GameChallenge || _kategorija == MobileChallenge)
+		{
+			for (int i = 0; i < _tim.GetTrenutno(); i++)
+			{
+				if (_tim.GetElement1(i) == u)
+					throw NedozvoljenaOperacija("Ne mozete dodati dva ista ucesnika.", __LINE__);
+			}
+			for (int i = 0; i < _tim.GetTrenutno(); i++)
+			{
+				if (_tim.GetElement2(i) == true && vodja == true)
+					throw NedozvoljenaOperacija("Ne moze tim imati dvojicu vodja.", __LINE__);
+			}
+			if (_tim.GetTrenutno() < 3)
+			{
+				_tim.AddElement(u, vodja);
+			}
+			else
+				cout << "Ne mozete dodati vise od 3 clana u ove kategorije." << endl;
+		}
+		if (_kategorija == InnovationChallenge)
+		{
+			for (int i = 0; i < _tim.GetTrenutno(); i++)
+			{
+				if (_tim.GetElement1(i) == u)
+					throw NedozvoljenaOperacija("Ne mozete dodati dva ista ucesnika.", __LINE__);
+			}
+			for (int i = 0; i < _tim.GetTrenutno(); i++)
+			{
+				if (_tim.GetElement2(i) == true && vodja == true)
+					throw NedozvoljenaOperacija("Ne moze tim imati dvojicu vodja.", __LINE__);
+			}
+			if (_tim.GetTrenutno() < 4)
+			{
+				_tim.AddElement(u, vodja);
+			}
+			else
+				cout << "Ne mozete dodati vise od 4 clana u ove kategorije." << endl;
+		}
+	}
+	void PromijeniPredstavnika(int index)
+	{
+		for (int i = 0; i < _tim.GetTrenutno(); i++)
+		{
+			if (_tim.GetElement2(i) == true)
+				_tim.GetElement2(i) = false;
+		}
+		_tim.GetElement2(index) = true;
+	}
+	string GetDatum()const { return _datum; }
+	Kategorija GetKategoriju()const { return _kategorija; }
+	FITKolekcija<Ucesnik, bool> GetTim()const { return _tim; }
+	virtual void Info()const {
+		cout << "Datum prijave: " << _datum << endl;
+		cout << "Kategorija: " << kategorija[_kategorija] << endl;
+		cout << "------------------------------------------------" << endl;
+		for (int i = 0; i < _tim.GetTrenutno(); i++)
+		{
+			_tim.GetElement1(i).Info();
+			if (_tim.GetElement2(i) == true)
+				cout << "Vodja." << endl;
+			else
+				cout << "Clan tima." << endl;
+			cout << "------------------------------------------------" << endl;
+		}
+	}
+	bool operator==(const Prijava&p)
+	{
+		if (_datum == p._datum&&_kategorija == p._kategorija)
+			return true;
+		return false;
+	}
+};
+//Prijave koje ukljucuju izradu projekata (kategorije: GameChallenge, InnovationChallenge i MobileChallenge)
+class PrijavaProjekta : public Prijava {
+	char* _nazivProjekta;
+	string _opisProjekta;
+	bool _finalizirano; //Atribut oznacava da li je projekat zavrsen i predan u predvidjenom roku
+	bool _prezentacija; //Projekti koji se prezentuju i ocjenjuju
+public:
+	PrijavaProjekta(string datum, Kategorija kat, const char*nazivprojekta, string opisprojekta) :Prijava(datum, kat)
+	{
+		if (kat == SQLChallenge || kat == CodingChallenge)
+			throw NedozvoljenaOperacija("Ove prijave ne ukljucuju izradu projekta.", __LINE__);
+		_nazivProjekta = AlocirajNiz(nazivprojekta);
+		_opisProjekta = opisprojekta;
+	}
+	PrijavaProjekta(const PrijavaProjekta&pri) :Prijava(pri)
+	{
+		_nazivProjekta = AlocirajNiz(pri._nazivProjekta);
+		_opisProjekta = pri._opisProjekta;
+		_finalizirano = pri._finalizirano;
+		_prezentacija = pri._prezentacija;
+	}
+	void SetFinalizirano() { _finalizirano = true; _prezentacija = true; }
+	bool JelFinalizirana() {
+		if (_finalizirano == true && _prezentacija == true)
+			return true;
+		return false;
+	}
+	void Info()const {
+		Prijava::Info();
+		cout << "Naziv projekta: " << _nazivProjekta << endl;
+		cout << "Opis projekta: " << _opisProjekta << endl;
+	}
+	~PrijavaProjekta()
+	{
+		delete[]_nazivProjekta; _nazivProjekta = nullptr;
+	}
+};
+
+class FITCodingChallenge
+{
+	int godina;
+	string _prijaveDo; //Podrzani format unosa: dd.MM.yyyy (koristiti regex)
+	vector<Prijava*> _prijave;
+	FITKolekcija<ClanKomisije, Kategorija> _komisija;
+	FITKolekcija<Prijava*, FITKolekcija<ClanKomisije*, double>> _ocjene;
+public:
+	FITCodingChallenge(int god, string prijavedo)
+	{
+		string pravilo = "(\\d{2})\\.(\\d{2})\\.(\\d{4})";
+		regex obj(pravilo);
+		if (regex_match(prijavedo, obj))
+			_prijaveDo = prijavedo;
+		else
+			throw NedozvoljenaOperacija("Nije validan format datuma.", __LINE__);
+		godina = god;
+	}
+	~FITCodingChallenge()
+	{
+		for (int i = 0; i < _prijave.size(); i++)
+		{
+			delete _prijave[i];
+			_prijave[i] = nullptr;
+		}
+	}
+	void operator+=(Prijava &p)
+	{
+		if (p.GetDatum() < _prijaveDo)
+		{
+			Prijava *pri = &p;
+			PrijavaProjekta *prijava = dynamic_cast<PrijavaProjekta*>(pri);
+			if (prijava != nullptr)
+				_prijave.push_back(new PrijavaProjekta(*prijava));
+			else
+				_prijave.push_back(new Prijava(p));
+
+		}
+	}
+	void Oznaci(PrijavaProjekta&p)
+	{
+		p.SetFinalizirano();
+	}
+	void operator()(ClanKomisije &clan, Kategorija kat)
+	{
+		for (int i = 0; i < _komisija.GetTrenutno(); i++)
+		{
+			if (_komisija.GetElement2(i) == kat)
+			{
+				for (int j = 0; j < _komisija.GetTrenutno(); j++)
+				{
+					if (_komisija.GetElement1(j) == clan)
+					{
+						cout << "Ne mozete dva puta istog clana dodati u istu kategoriju." << endl;
+						return;
+					}
+				}
+			}
+		}
+		_komisija.AddElement(clan, kat);
+	}
+	void IspisPrijava()
+	{
+		cout << "Prijave: " << endl;
+		cout << "Prijave u kategoriji SQLChallenge: " << endl;
+		for (int i = 0; i < _prijave.size(); i++)
+		{
+			if (_prijave[i]->GetKategoriju() == SQLChallenge)
+				_prijave[i]->Info();
+		}
+		cout << "-----------------------------------------------------" << endl;
+		cout << "Prijave u kategoriji CodingChallenge: " << endl;
+		for (int i = 0; i < _prijave.size(); i++)
+		{
+			if (_prijave[i]->GetKategoriju() == CodingChallenge)
+				_prijave[i]->Info();
+		}
+		cout << "-----------------------------------------------------" << endl;
+		cout << "Prijave u kategoriji GameChallenge: " << endl;
+		for (int i = 0; i < _prijave.size(); i++)
+		{
+			if (_prijave[i]->GetKategoriju() == GameChallenge)
+				_prijave[i]->Info();
+		}
+		cout << "-----------------------------------------------------" << endl;
+		cout << "Prijave u kategoriji InnovationChallenge: " << endl;
+		for (int i = 0; i < _prijave.size(); i++)
+		{
+			if (_prijave[i]->GetKategoriju() == InnovationChallenge)
+				_prijave[i]->Info();
+		}
+		cout << "-----------------------------------------------------" << endl;
+		cout << "Prijave u kategoriji MobileChallenge: " << endl;
+		for (int i = 0; i < _prijave.size(); i++)
+		{
+			if (_prijave[i]->GetKategoriju() == MobileChallenge)
+				_prijave[i]->Info();
+		}
+		cout << "-----------------------------------------------------" << endl;
+	}
+	void Ocjeni(Prijava &p, ClanKomisije &clan, double ocjena)
+	{
+		PrijavaProjekta *prijava = dynamic_cast<PrijavaProjekta*>(&p);
+		if (prijava != nullptr)
+		{
+			if (prijava->JelFinalizirana() == false)
+			{
+				cout << "Ne mozete ocjeniti prijavu koja nije finalizirana." << endl;
+				return;
+			}
+		}
+		for (int i = 0; i < _komisija.GetTrenutno(); i++)
+		{
+			if (clan == _komisija.GetElement1(i))
+			{
+				if (_komisija.GetElement2(i) != p.GetKategoriju())
+				{
+					cout << "Kategorija mora odgovarati clanu komisije." << endl;
+					return;
+				}
+			}
+		}
+		if (p.GetKategoriju() != SQLChallenge && p.GetKategoriju() != CodingChallenge)
+		{
+			if (ocjena < 1 || ocjena>10)
+			{
+				cout << "Ocjena projekta ne moze biti veca od 10 ni manja od 1." << endl;
+				return;
+			}
+			else
+			{
+				PrijavaProjekta *prijava = dynamic_cast<PrijavaProjekta*>(&p);
+				if (prijava != nullptr)
+				{
+					FITKolekcija<ClanKomisije*, double> obj;
+					obj.AddElement(&clan, ocjena);
+					_ocjene.AddElement(prijava, obj);
+				}
+			}
+		}
+		else
+		{
+			if (ocjena < 1 || ocjena>100)
+			{
+				cout << "Broj bodova za rad ne mogu biti veci od 100 ni manji od 1." << endl;
+				return;
+			}
+			else
+			{
+				FITKolekcija<ClanKomisije*, double> obj;
+				obj.AddElement(&clan, ocjena);
+				_ocjene.AddElement(&p, obj);
+			}
+		}
+	}
+	void IspisClanaKomisije(const char*imeiprezime)
+	{
+		for (int i = 0; i < _ocjene.GetTrenutno(); i++)
+		{
+			for (int j = 0; j < _ocjene.GetElement2(i).GetTrenutno(); j++)
+			{
+				if (strcmp(_ocjene.GetElement2(i).GetElement1(j)->GetIme(), imeiprezime) == 0)
+				{
+					cout << _ocjene.GetElement2(i).GetElement2(j) << endl;
+					cout << _ocjene.GetElement1(i) << endl;
+				}
+			}
+		}
+	}
+	void IspisiOcjene(const char*imeiprezime)
+	{
+		for (int i = 0; i < _ocjene.GetTrenutno(); i++)
+		{
+			for (int j = 0; j < _ocjene.GetElement1(i)->GetTim().GetTrenutno(); j++)
+			{
+				if (strcmp(_ocjene.GetElement1(i)->GetTim().GetElement1(j).GetIme(), imeiprezime) == 0)
+				{
+					cout << _ocjene.GetElement1(i) << endl;
+					cout << _ocjene.GetElement2(i) << endl;
+				}
+			}
+		}
+	}
+	//Funkciju za rangiranje kandidata na osnovu kategorije proslijedjene kao parametar.
+	//Funkcija treba da na osnovu ocjena clanova komisije ispise rang liste timova zajedno sa prosjecnim ocjenama njihovih projekata (radova).
+	//Dakle, konacna rang lista ukljucuje nazive timova (u zavisnosti od kategorije i naziv projekta), te prosjecnu ocjenu.
+	friend ostream&operator<<(ostream&cout, FITCodingChallenge&fit);
+};
+ostream&operator<<(ostream&cout, FITCodingChallenge&fit) {
+	cout << "-----------------------------------------------------" << endl;
+	cout << "Godina: " << fit.godina << endl;
+	cout << "Prijave do: " << fit._prijaveDo << endl;
+	cout << "Prijave: " << endl;
+	cout << "-----------------------------------------------------" << endl;
+	for (int i = 0; i < fit._prijave.size(); i++)
+	{
+		fit._prijave[i]->Info();
+	}
+	cout << "-----------------------------------------------------" << endl;
+	cout << "Komisija: " << endl;
+	cout << fit._komisija << endl;
+	cout << "-----------------------------------------------------" << endl;
+	cout << "Ocjene: " << endl;
+	cout << fit._ocjene << endl;
+	return cout;
+}
+
+int main()
+{
+	try
+	{
+		Ucesnik prvi("Abedin", "Halilovic", 1999, "abedinhalilovic@gmail.com", "nEki2pass", "FIT");
+		Ucesnik drugi("Sadin", "Memic", 1997, "sadinmemic@gmail.com", "nEki2pass", "MEH");
+		ClanKomisije clan("Ajdin", "Muhibic", 1998, "ajdinmuhibic@gmail.com", "nEki2pass", "MEH", "Direktor", "IGMAN.doo");
+		Prijava pri("11.12.2018", SQLChallenge);
+		pri.DodajClana(prvi, false);
+		pri.DodajClana(drugi, true);
+		FITCodingChallenge fit(2019, "11.19.2019");
+		fit += pri;
+		fit(clan, SQLChallenge);
+		fit.IspisiOcjene("Abedin");
+		fit.IspisPrijava();
+		//cout << fit << endl;
+		fit.Ocjeni(pri, clan, 8);
+	}
+	catch (NedozvoljenaOperacija &exe)
+	{
+		exe.Info();
+	}
+
+
+	system("pause>0");
+	return 0;
+}
+

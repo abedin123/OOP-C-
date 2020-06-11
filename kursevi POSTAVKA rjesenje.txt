@@ -1,0 +1,544 @@
+#include <iostream>
+#include <ostream>
+#include <string>
+#include <exception>
+#include <vector>
+#include <sstream> 
+#include <algorithm> 
+#include <iterator>
+using namespace std;
+char *Alociraj(const char *novo)
+{
+	if (novo == nullptr)
+		return nullptr;
+	int size = strlen(novo) + 1;
+	char *temp = new char[size];
+	strcpy_s(temp, size, novo);
+	return temp;
+}
+class Izuzetak :public exception {
+	string _datum;
+	int _linija;
+public:
+	Izuzetak(const char* datum, int linija) :exception(datum)
+	{
+		_linija = linija;
+	}
+	friend ostream&operator<<(ostream&cout, const Izuzetak&i)
+	{
+		cout << "ERROR->>>>" << "Desio se na datum: " << i._datum << " - " << "u liniji: " << i._linija << endl;
+		return cout;
+	}
+};
+template<class T1, class T2, int max>
+class Kolekcija {
+	T1 * _elementi1[max];
+	T2 * _elementi2[max];
+	int * _trenutno;
+public:
+	Kolekcija()
+	{
+		for (int i = 0; i < max; i++)
+		{
+			_elementi1[i] = nullptr;
+			_elementi2[i] = nullptr;
+		}
+		_trenutno = new int(0);
+	}
+	void operator=(const Kolekcija&k)
+	{
+		for (int i = 0; i < *_trenutno; i++)
+		{
+			delete _elementi1[i]; _elementi1[i] = nullptr;
+			delete _elementi2[i]; _elementi2[i] = nullptr;
+		}
+		for (int i = 0; i < *k._trenutno; i++)
+		{
+			_elementi1[i] = new T1(*k._elementi1[i]);
+			_elementi2[i] = new T2(*k._elementi2[i]);
+		}
+		*_trenutno = *k._trenutno;
+	}
+	Kolekcija(const Kolekcija&k)
+	{
+		for (int i = 0; i < *k._trenutno; i++)
+		{
+			_elementi1[i] = new T1(*k._elementi1[i]);
+			_elementi2[i] = new T2(*k._elementi2[i]);
+		}
+		_trenutno = new int(*k._trenutno);
+	}
+	~Kolekcija()
+	{
+		for (int i = 0; i < *_trenutno; i++)
+		{
+			delete _elementi1[i];
+			_elementi1[i] = nullptr;
+			delete _elementi2[i];
+			_elementi2[i] = nullptr;
+		}
+		delete _trenutno; _trenutno = nullptr;
+	}
+	void AddElement(T1 t, T2 t1)
+	{
+		_elementi1[*_trenutno] = new T1(t);
+		_elementi2[*_trenutno] = new T2(t1);
+		(*_trenutno)++;
+	}
+	T1&GetElement1(int lok)const {
+		return *_elementi1[lok];
+	}
+	T2&GetElement2(int lok)const {
+		return *_elementi2[lok];
+	}
+	int GetMax()const { return max; }
+	int GetTrenutno()const { return *_trenutno; }
+	friend ostream& operator<<<>(ostream&cout, const Kolekcija<T1, T2, max>&k);
+};
+template<class T1, class T2, int max>
+ostream& operator<<<>(ostream&cout, const Kolekcija<T1, T2, max>&k)
+{
+	for (int i = 0; i < *k._trenutno; i++)
+	{
+		cout << *k._elementi1[i] << "   " << *k._elementi2[i] << endl;
+	}
+	return cout;
+}
+class Datum {
+	int *_dan, *_mjesec, *_godina;
+public:
+	Datum(int dan = 1, int mjesec = 1, int godina = 2000) {
+		_dan = new int(dan);
+		_mjesec = new int(mjesec);
+		_godina = new int(godina);
+	}
+	~Datum() {
+		delete _dan; _dan = nullptr;
+		delete _mjesec; _mjesec = nullptr;
+		delete _godina; _godina = nullptr;
+	}
+	Datum(const Datum&d)
+	{
+		_dan = new int(*d._dan);
+		_mjesec = new int(*d._mjesec);
+		_godina = new int(*d._godina);
+	}
+	void operator=(const Datum&d)
+	{
+		delete _dan; delete _mjesec; delete _godina;
+		_dan = _mjesec = _godina = nullptr;
+		_dan = new int(*d._dan);
+		_mjesec = new int(*d._mjesec);
+		_godina = new int(*d._godina);
+	}
+	bool operator==(const Datum&d)
+	{
+		return *_dan == *d._dan&&*_mjesec == *d._mjesec&&*_godina == *d._godina;
+	}
+	bool operator>(const Datum&d)
+	{
+		if (*d._godina > *_godina)
+			return true;
+		if (*d._godina == *_godina)
+		{
+			if (*d._mjesec > *_mjesec)
+				return true;
+			if (*d._mjesec == *_mjesec)
+			{
+				if (*d._dan > *_mjesec)
+					return true;
+			}
+		}
+		return false;
+	}
+	friend ostream& operator<< (ostream &COUT, const Datum &obj) {
+		COUT << *obj._dan << " " << *obj._mjesec << " " << *obj._godina;
+		return COUT;
+	}
+};
+enum ListaKurseva { HtmlCSSJavaScript, SoftwareEngeneeringFundamentals, MasteringSQL, WindowsSecurity };
+const char*Kursevi[]{ "HtmlCSSJavaScript", "SoftwareEngeneeringFundamentals", "MasteringSQL", "WindowsSecurity" };
+class Kurs {
+	ListaKurseva _kurs;
+	Datum * _pocetak;
+	Datum * _kraj;
+	char * _imePredavaca;
+public:
+	Kurs(ListaKurseva k, const char* imepredavaca, Datum pocetak, Datum kraj)
+	{
+		_kurs = k;
+		_pocetak = new Datum(pocetak);
+		_kraj = new Datum(kraj);
+		_imePredavaca = Alociraj(imepredavaca);
+	}
+	Kurs(const Kurs&k)
+	{
+		_kurs = k._kurs;
+		_pocetak = new Datum(*k._pocetak);
+		_kraj = new Datum(*k._kraj);
+		_imePredavaca = Alociraj(k._imePredavaca);
+	}
+	void operator=(const Kurs&k)
+	{
+		delete _pocetak; delete _kraj; _pocetak = _kraj = nullptr;
+		delete[]_imePredavaca; _imePredavaca = nullptr;
+		_kurs = k._kurs;
+		_pocetak = new Datum(*k._pocetak);
+		_kraj = new Datum(*k._kraj);
+		_imePredavaca = Alociraj(k._imePredavaca);
+	}
+	~Kurs() {
+		delete _pocetak; _pocetak = nullptr;
+		delete _kraj; _kraj = nullptr;
+		delete[]_imePredavaca;
+		_imePredavaca = nullptr;
+	}
+	bool operator==(const Kurs&k)
+	{
+		return _kurs == k._kurs&&*_pocetak == *k._pocetak&&*_kraj == *k._kraj&&strcmp(_imePredavaca, k._imePredavaca) == 0;
+	}
+	bool operator<(const Kurs&k)
+	{
+		string ime1 = _imePredavaca;
+		string ime2 = k._imePredavaca;
+		if (ime1 > ime2)
+			return true;
+		return false;
+	}
+	Datum &GetPocetak() { return *_pocetak; }
+	Datum &GetKraj() { return *_kraj; }
+	char *GetImePredavaca()const { return _imePredavaca; }
+	friend ostream& operator<<(ostream&cout, const Kurs&k);
+};
+ostream& operator<<(ostream&cout, const Kurs&k) {
+	cout << "Kurs: " << Kursevi[k._kurs] << endl;
+	cout << "Datum pocetka: " << *k._pocetak << endl;
+	cout << "Datum kraja: " << *k._kraj << endl;
+	cout << "Ime predavaca: " << k._imePredavaca << endl;
+	return cout;
+}
+class Polaznik {
+	static int ID;
+	const int _polaznikID; //svakom novom studentu automatski dodijeliti novi ID (autoincrement)
+	char * _imePrezime;
+	vector<Kurs> _pohadjaniKursevi;
+public:
+	Polaznik(const char * imePrezime) :_polaznikID(ID++) {
+		int size = strlen(imePrezime) + 1;
+		_imePrezime = new char[size];
+		strcpy_s(_imePrezime, size, imePrezime);
+	}
+	Polaznik(const Polaznik&p) :_polaznikID(ID)
+	{
+		_imePrezime = Alociraj(p._imePrezime);
+		for (int i = 0; i < p._pohadjaniKursevi.size(); i++)
+		{
+			_pohadjaniKursevi.push_back(p._pohadjaniKursevi[i]);
+		}
+	}
+	void Sort()
+	{
+		sort(_pohadjaniKursevi.begin(), _pohadjaniKursevi.end());
+	}
+	bool AddKurs(Kurs &k)
+	{
+		vector<Kurs>::iterator iteratorprovjere;
+		iteratorprovjere = _pohadjaniKursevi.begin();
+		while (iteratorprovjere != _pohadjaniKursevi.end())
+		{
+			if (*iteratorprovjere == k)
+				throw Izuzetak(__DATE__, __LINE__);
+			iteratorprovjere++;
+		}
+		_pohadjaniKursevi.push_back(k);
+		Sort();
+		return true;
+	}
+	bool RemoveKurs(Kurs &k)
+	{
+		for (int i = 0; i < _pohadjaniKursevi.size(); i++)
+		{
+			if (_pohadjaniKursevi[i] == k)
+			{
+				_pohadjaniKursevi.erase(_pohadjaniKursevi.begin() + i);
+				return true;
+			}
+		}
+		return false;
+	}
+	void operator=(const Polaznik&p)
+	{
+		delete[]_imePrezime; _imePrezime = nullptr;
+		_imePrezime = Alociraj(p._imePrezime);
+		for (int i = 0; i < p._pohadjaniKursevi.size(); i++)
+		{
+			_pohadjaniKursevi.push_back(p._pohadjaniKursevi[i]);
+		}
+	}
+	~Polaznik() { delete[] _imePrezime; _imePrezime = nullptr; }
+	bool operator==(const Polaznik&p)
+	{
+		if (strcmp(_imePrezime, p._imePrezime) != 0)
+			return false;
+		for (int i = 0; i < _pohadjaniKursevi.size(); i++)
+		{
+			if (!(_pohadjaniKursevi[i] == p._pohadjaniKursevi[i]))
+				return false;
+		}
+		return true;
+	}
+	int GetID()const { return _polaznikID; }
+	friend ostream&operator<<(ostream&cout, const Polaznik&p);
+};
+int Polaznik::ID = 1;
+ostream&operator<<(ostream&COUT, const Polaznik&p) {
+	cout << "Polaznik ID: " << p._polaznikID << endl;
+	cout << "Ime i prezime polaznika: " << p._imePrezime << endl;
+	cout << "Pohadjani kursevi za ovog polaznika: " << endl;
+	ostream_iterator<Kurs, char> iter(cout, "\n");
+	copy(p._pohadjaniKursevi.begin(), p._pohadjaniKursevi.end(), iter);
+	return cout;
+}
+class SkillsCentar {
+	string _nazivCentra;
+	vector<Kurs> _kursevi;//kursevi koje nudi odredjeni centar
+	Kolekcija<Kurs*, Polaznik*, 150> _aplikanti;
+public:
+	SkillsCentar(string naziv) { _nazivCentra = naziv; }
+	SkillsCentar(const SkillsCentar&s)
+	{
+		_nazivCentra = s._nazivCentra;
+		for (int i = 0; i < s._kursevi.size(); i++)
+		{
+			_kursevi.push_back(s._kursevi[i]);
+		}
+		for (int i = 0; i < s._aplikanti.GetTrenutno(); i++)
+		{
+			_aplikanti.AddElement(new Kurs(*s._aplikanti.GetElement1(i)), new Polaznik(*s._aplikanti.GetElement2(i)));
+		}
+	}
+	void operator=(const SkillsCentar&s)
+	{
+		for (int i = 0; i < _aplikanti.GetTrenutno(); i++)
+		{
+			if (_aplikanti.GetElement1(i) != nullptr)
+			{
+				delete _aplikanti.GetElement1(i); _aplikanti.GetElement1(i) = nullptr;
+				delete _aplikanti.GetElement2(i); _aplikanti.GetElement2(i) = nullptr;
+			}
+		}
+		_nazivCentra = s._nazivCentra;
+		for (int i = 0; i < s._kursevi.size(); i++)
+		{
+			_kursevi.push_back(s._kursevi[i]);
+		}
+		for (int i = 0; i < s._aplikanti.GetTrenutno(); i++)
+		{
+			_aplikanti.AddElement(new Kurs(*s._aplikanti.GetElement1(i)), new Polaznik(*s._aplikanti.GetElement2(i)));
+		}
+	}
+	~SkillsCentar()
+	{
+		for (int i = 0; i < _aplikanti.GetTrenutno(); i++)
+		{
+			delete _aplikanti.GetElement1(i); _aplikanti.GetElement1(i) = nullptr;
+			delete _aplikanti.GetElement2(i); _aplikanti.GetElement2(i) = nullptr;
+		}
+	}
+	bool ProvjeriKoliziju(Kurs &k)
+	{
+		for (int i = 0; i < _kursevi.size(); i++)
+		{
+			if (_kursevi[i] == k)
+			{
+				if (!(k.GetPocetak() > _kursevi[i].GetPocetak()))
+					return false;
+			}
+		}
+		return true;
+	}
+	/*SkillsCentar(const SkillsCentar & obj) :_kursevi(obj._kursevi), _aplikanti(obj._aplikanti) {
+		_nazivCentra = obj._nazivCentra;
+	}*/
+	void AddKurs(Kurs &k)
+	{
+		for (int i = 0; i < _kursevi.size(); i++)
+		{
+			if (_kursevi[i] == k)
+				throw Izuzetak(__DATE__, __LINE__);
+		}
+		_kursevi.push_back(k);
+	}
+	bool AddAplikaciju(Kurs &k, Polaznik &p)
+	{
+		for (int i = 0; i < _aplikanti.GetTrenutno(); i++)
+		{
+			if (*_aplikanti.GetElement1(i) == k)
+				throw Izuzetak(__DATE__, __LINE__);
+		}
+		for (int i = 0; i < _kursevi.size(); i++)
+		{
+			if (_kursevi[i] == k)
+			{
+				_aplikanti.AddElement(new Kurs(k), new Polaznik(p));
+				return true;
+			}
+		}
+		throw Izuzetak(__DATE__, __LINE__);
+	}
+	void DodajUspjesnoOkoncanKurs(int id, Kurs &k)
+	{
+		for (int i = 0; i < _aplikanti.GetTrenutno(); i++)
+		{
+			if (_aplikanti.GetElement2(i)->GetID() == id)
+			{
+				*_aplikanti.GetElement1(i) = k;
+				return;
+			}
+		}
+	}
+	vector<Polaznik> GetPolazniciByPredavac(const char* ime)
+	{
+		vector<Polaznik> polaznici;
+		for (int i = 0; i < _aplikanti.GetTrenutno(); i++)
+		{
+			if (strcmp(_aplikanti.GetElement1(i)->GetImePredavaca(), ime) == 0)
+			{
+				polaznici.push_back(*_aplikanti.GetElement2(i));
+			}
+		}
+		return polaznici;
+	}
+	bool RemoveKurs(Kurs &k)
+	{
+		int indexkurs = 0;
+		for (int i = 0; i < _kursevi.size(); i++)
+		{
+			indexkurs = i;
+			for (int j = 0; j < _aplikanti.GetTrenutno(); j++)
+			{
+				if (_kursevi[i] == *_aplikanti.GetElement1(j))
+					return false;
+			}
+		}
+		_kursevi.erase(_kursevi.begin() + indexkurs);
+		return true;
+	}
+	friend ostream&operator<<(ostream&cout, const SkillsCentar&s);
+};
+ostream&operator<<(ostream&cout, const SkillsCentar&s) {
+	cout << "Naziv centra: " << s._nazivCentra << endl;
+	cout << "Kursevi: " << endl;
+	for (int i = 0; i < s._kursevi.size(); i++)
+	{
+		cout << s._kursevi[i] << endl;
+	}
+	cout << "Aplikanti: " << endl;
+	for (int i = 0; i < s._aplikanti.GetTrenutno(); i++)
+	{
+		cout << "Kurs: " << *s._aplikanti.GetElement1(i) << endl;
+		cout << "Polaznik: " << *s._aplikanti.GetElement2(i) << endl;
+	}
+	return cout;
+}
+const char *crt = "\n---------------------------------------\n";
+
+void main()
+{
+	/****************************************************************************
+	1. SVE KLASE TREBAJU POSJEDOVATI ADEKVATAN DESTRUKTOR
+	2. NAMJERNO IZOSTAVLJANJE KOMPLETNIH I/ILI POJEDINIH DIJELOVA DESTRUKTORA KOJI UZROKUJU RUNTIME ERROR CE BITI OZNACENO KAO "RE"
+	3. SPASAVAJTE PROJEKAT KAKO BI SE SPRIJECILO GUBLJENJE URADJENOG ZADATKA
+	4. PROGRAMSKI CODE SE TAKODJER NALAZI U FAJLU CODE_.TXT
+	5. NAZIVI FUNKCIJA MORAJU BITI IDENTIÈNI ONIMA KOJI SU KORI?TENI U TESTNOM CODE-U.OSTALE, POMOÆNE FUNKCIJE MO?ETE IMENOVATI PO ?ELJI.
+	6. IZUZETAK BACITE KAD GOD JE TO POTREBNO.
+	****************************************************************************/
+
+#pragma region TestiranjeDatuma
+	Datum danas(26, 11, 2015);
+	Datum sutra(danas);
+	Datum prekosutra;
+	prekosutra = danas;
+	cout << danas << endl << sutra << endl << prekosutra << crt;
+#pragma endregion
+#pragma region TestiranjeKolekcije
+	Kolekcija<int, int, 10> kolekcija1;
+	for (size_t i = 0; i < kolekcija1.GetMax(); i++)
+		kolekcija1.AddElement(i, i + 2);
+	cout << kolekcija1.GetElement1(0) << " " << kolekcija1.GetElement2(0) << endl;
+	cout << kolekcija1 << endl;
+	Kolekcija<int, int, 10> kolekcija2;
+	kolekcija2 = kolekcija1;
+	cout << kolekcija2 << crt;
+	if (kolekcija1.GetTrenutno() == kolekcija2.GetTrenutno())
+		cout << "ISTI BROJ ELEMENATA" << endl;
+	Kolekcija<int, int, 10> kolekcija3(kolekcija2);
+	cout << kolekcija3 << crt;
+#pragma endregion
+#pragma region TestiranjeKursa
+	Kurs sef(SoftwareEngeneeringFundamentals, "Jasmin Azemovic", Datum(28, 1, 2016), Datum(15, 2, 2016));
+	cout << sef << endl;
+	Kurs msql(MasteringSQL, "Adel Handzic", Datum(28, 2, 2016), Datum(15, 3, 2016));
+	sef = msql;
+	if (sef == msql)//kursevi su isti ako posjeduju identicne vrijednosti svih atributa
+		cout << "ISTI SU KURSEVI" << endl;
+	Kurs msql2(msql);
+	cout << msql2 << endl;
+#pragma endregion
+#pragma region TestiranjePolaznika
+	Polaznik denis("Denis Music");
+	Polaznik denis2("Denis2 Music2");
+	try {
+		if (denis.AddKurs(sef)) //<<<< NAKON DODAVANJA SVAKOG NOVOG KURSA IZVRSITI NJIHOVO SORTIRANJE - NACIN SORTIRANJA PO VASEM IZBORU
+			cout << "Polazniku " << denis << " uspjesno dodat kurs " << sef << endl;
+		if (denis.AddKurs(msql))
+			cout << "Polazniku " << denis << " uspjesno dodat kurs " << msql << endl;
+		if (denis.AddKurs(msql))//<<<< NIJE DOZVOLJENO DODATI IDENTICNE KURSEVE, PRILIKOM PROVJERE KORISTITI ITERATOR
+			cout << "Polazniku " << denis << " uspjesno dodat kurs " << msql << endl;
+		if (denis.RemoveKurs(msql))
+			cout << "Polazniku " << denis << " uspjesno uklonjen kurs " << msql << endl;
+		if (denis.RemoveKurs(sef))
+			cout << "Polazniku " << denis << " uspjesno uklonjen kurs " << sef << endl;
+
+		cout << denis2 << endl;//<<<<<KORISTITI OSTREAM_ITERATOR
+		denis2 = denis;
+		if (denis == denis2)//polaznici su isti ako imaju isto ime i ako su pohadjali iste kurseve
+			cout << "ISTI SU" << endl;
+	}
+	catch (Izuzetak & err) {
+		cout << err << endl;
+	}
+#pragma endregion
+
+#pragma region TestiranjeCentra
+	try {
+		SkillsCentar mostar("Skills Center Mostar");
+		if (mostar.ProvjeriKoliziju(sef))//<<<JEDAN KURS NE SMIJE POCETI DOK DRUGI TRAJE TJ. VRIJEME ODRZAVANJA KURSA SE NE SMIJE POKLAPATI
+			mostar.AddKurs(sef);
+		if (mostar.ProvjeriKoliziju(msql))
+			mostar.AddKurs(msql);
+		if (mostar.ProvjeriKoliziju(msql2))
+			mostar.AddKurs(msql2);//<<<< ONEMOGUCITI DODAVANJE IDENTICNIH KURSEVA
+
+		mostar.AddAplikaciju(sef, denis);//<<< ONEMOGUCITI APLICIRANJE ZA KURSEVE KOJI NISU REGISTROVANI U CENTRU
+		mostar.AddAplikaciju(msql, denis);
+		mostar.AddAplikaciju(msql, denis);//<<< ONEMOGUCITI APLICIRANJE ZA ISTI KURS
+
+		mostar.DodajUspjesnoOkoncanKurs(1, sef);
+		//BROJ 1 OZNACAVA id STUDENTA. FUNKCIJA JE ZADUZENA DA STUDENTU DODA KURS KOJI JE POSLAT KAO PARAMETAR. PREDUSLOV ZA DODAVANJE JE 
+		//DA JE STUDENT PRETHODNO APLICIRAO ZA TAJ KURS 
+		vector<Polaznik> listaPolaznika = mostar.GetPolazniciByPredavac("Jasmin Azemovic");
+		//VRACA INFORMACIJE O POLAZNICIMA KOJI SU KOD ODREDJENOG PREDAVACA USPJESNO OKONCALI KURS
+
+		if (mostar.RemoveKurs(sef))//ONEMOGUCITI UKLANJANJE KURSA KOJI SU VEC PRIJAVILI NEKI OD POLAZNIKA
+			cout << "Kurs " << sef << " uspjesno uklonjen iz cetra " << mostar << endl;
+
+		SkillsCentar sarajevo = mostar;
+		cout << sarajevo << endl;
+	}
+	catch (Izuzetak & err) {
+		cout << err << endl;
+	}
+#pragma endregion
+	system("pause");
+}

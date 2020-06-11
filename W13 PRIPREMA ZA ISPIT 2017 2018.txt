@@ -1,0 +1,381 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <regex>
+#include <exception>
+#include <algorithm>
+#include <thread>
+using namespace std;
+
+class Izuzetak:public exception
+{
+private:
+	int _linija;
+public:
+	Izuzetak(const char*poruka, int linija):exception(poruka)
+	{
+		_linija = linija;
+	}
+	void Info()const {
+		cout << "Greskaaa->>>" << what() << " linija:" << _linija << endl;
+	}
+};
+template<class T1, class T2>
+class Kolekcija {
+	T1 * _elementi1;
+	T2 * _elementi2;
+	int _trenutnoElemenata;
+public:
+	Kolekcija()
+	{
+		_elementi1 = nullptr;
+		_elementi2 = nullptr;
+		_trenutnoElemenata = 0;
+	}
+
+	Kolekcija(const Kolekcija& k)
+	{
+		_elementi1 = new T1[k._trenutnoElemenata];
+		_elementi2 = new T2[k._trenutnoElemenata];
+
+		for (size_t i = 0; i < k._trenutnoElemenata; i++)
+		{
+			_elementi1[i] = k._elementi1[i];
+			_elementi2[i] = k._elementi2[i];
+		}
+
+		_trenutnoElemenata = k._trenutnoElemenata;
+	}
+
+	Kolekcija& operator=(const Kolekcija& k)
+	{
+		if (this != &k)
+		{
+			delete[] _elementi1;
+			delete[] _elementi2;
+
+			_elementi1 = new T1[k._trenutnoElemenata];
+			_elementi2 = new T2[k._trenutnoElemenata];
+
+			for (size_t i = 0; i < k._trenutnoElemenata; i++)
+			{
+				_elementi1[i] = k._elementi1[i];
+				_elementi2[i] = k._elementi2[i];
+			}
+
+			_trenutnoElemenata = k._trenutnoElemenata;
+		}
+
+		return *this;
+	}
+
+	~Kolekcija()
+	{
+		delete[] _elementi1;
+		_elementi1 = nullptr;
+
+		delete[] _elementi2;
+		_elementi2 = nullptr;
+	}
+
+	
+	int AddElement(T1& el1, T2& el2)
+	{
+		for (size_t i = 0; i < _trenutnoElemenata; i++)
+		{
+			if (_elementi1[i] == el1 || _elementi2[i] == el2)
+				return i;
+		}
+
+		T1* temp1 = new T1[_trenutnoElemenata + 1];
+		T2* temp2 = new T2[_trenutnoElemenata + 1];
+
+		for (size_t i = 0; i < _trenutnoElemenata; i++)
+		{
+			temp1[i] = _elementi1[i];
+			temp2[i] = _elementi2[i];
+		}
+
+		delete[] _elementi1;
+		delete[] _elementi2;
+
+		_elementi1 = temp1;
+		_elementi2 = temp2;
+
+		_elementi1[_trenutnoElemenata] = el1;
+		_elementi2[_trenutnoElemenata] = el2;
+		_trenutnoElemenata++;
+
+		return -1;
+	}
+
+	bool RemoveElement(T1& el)
+	{
+		for (size_t i = 0; i < _trenutnoElemenata; i++)
+		{
+			if (_elementi1[i] == el)
+			{
+				T1* temp1 = new T1[_trenutnoElemenata - 1];
+				T2* temp2 = new T2[_trenutnoElemenata - 1];
+
+				int poz = 0;
+				for (size_t j = 0; j < _trenutnoElemenata; j++)
+				{
+					if (j != i)
+					{
+						temp1[poz] = _elementi1[j];
+						temp2[poz++] = _elementi2[j];
+					}
+				}
+
+				delete[] _elementi1;
+				delete[] _elementi2;
+
+				_elementi1 = temp1;
+				_elementi2 = temp2;
+				_trenutnoElemenata--;
+
+				return true;
+
+			}
+		}
+
+		return false;
+	}
+
+	void RemoveAll()
+	{
+		delete[] _elementi1;
+		_elementi1 = nullptr;
+
+		delete[] _elementi2;
+		_elementi2 = nullptr;
+
+		_trenutnoElemenata = 0;
+	}
+
+	int GetTrenutno()const { return _trenutnoElemenata; }
+
+	T1& GetElement1(int index)
+	{
+		if (index < 0 || index >= _trenutnoElemenata)
+		{
+			throw exception("Index was out of range.");
+		}
+
+		return _elementi1[index];
+	}
+
+	T2& GetElement2(int index)
+	{
+		if (index < 0 || index >= _trenutnoElemenata)
+		{
+			throw exception("Index was out of range.");
+		}
+
+		return _elementi2[index];
+	}
+
+	friend ostream& operator<<<>(ostream&, const Kolekcija&);
+};
+
+template<class T1, class T2>
+ostream& operator<<<>(ostream& cout, const Kolekcija<T1, T2>& k)
+{
+	for (size_t i = 0; i < k._trenutnoElemenata; i++)
+	{
+		cout << k._elementi1[i] << "\n" << k._elementi2[i] << "\n\n";
+	}
+
+	return cout;
+}
+
+class Student {
+	int _brojIndeksa;
+	string _ime;
+	string _prezime;
+	string _korisnickomIme;
+	string _lozinka;
+public:
+	Student()
+	{
+
+	}
+	Student(int brojindexa, string ime, string prezime, string korisnickoime, string lozinka)
+	{
+		string pravilo = "(?=.{6,})(?=.*\\d)(?=.*[a-zA-Z])(?=.*[@#!(),])";
+		string pravilo1 = "(" + ime + "|" + prezime + ")";
+		regex obj(pravilo);
+		if (!regex_search(lozinka, obj))
+			throw Izuzetak("Lozinka mora imati vise od 6 znakova,slova,brojeve,specijalne znakove i ne smije sadrzavati ime ili prezime.", __LINE__);
+		if(regex_search(lozinka,regex(pravilo1)))
+			throw Izuzetak("Lozinka mora imati vise od 6 znakova,slova,brojeve,specijalne znakove i ne smije sadrzavati ime ili prezime.", __LINE__);
+		_lozinka = lozinka;
+		_brojIndeksa = brojindexa;
+		_ime = ime;
+		_prezime = prezime;
+		_korisnickomIme = korisnickoime;
+	}
+	friend ostream&operator<<(ostream&cout, const Student&s);
+	bool operator==(const Student&s) {
+		return _brojIndeksa == s._brojIndeksa;
+	}
+};
+ostream&operator<<(ostream&cout, const Student&s)
+{
+	cout << "Broj indexsa: " << s._brojIndeksa << endl;
+	cout << "Ime: " << s._ime << endl;
+	cout << "Prezime: " << s._prezime << endl;
+	cout << "Korisnicko ime: " << s._korisnickomIme << endl;
+	return cout;
+}
+class Ispit {
+protected:
+	string _predmet;
+	char * _opis;//npr. PR2::Integralni::30.01.2015
+				 /*tip string u kolekciji sluzi kao napomena vezana za ponasanje studenta na ispitu gdje ce se
+				 evidentirati utisci dezurnog nastavnika npr. kasnio, dosao bez indeksa, izbacen zbog prepisivanja*/
+	Kolekcija<Student, string>  * _listaStudenata;
+public:
+	Ispit(string predmet, const char*opis)
+	{
+		_predmet = predmet;
+		int size = strlen(opis) + 1;
+		_opis = new char[size];
+		strcpy_s(_opis, size, opis);
+		_listaStudenata = new Kolekcija<Student, string>();
+	}
+	Ispit(const Ispit&i)
+	{
+		_predmet = i._predmet;
+		int size = strlen(i._opis) + 1;
+		_opis = new char[size];
+		strcpy_s(_opis, size, i._opis);
+		_listaStudenata = new Kolekcija<Student, string>(*i._listaStudenata);
+	}
+	void operator=(const Ispit&i)
+	{
+		delete[]_opis; _opis = nullptr;
+		delete _listaStudenata; _listaStudenata = nullptr;
+		_predmet = i._predmet;
+		int size = strlen(i._opis) + 1;
+		_opis = new char[size];
+		strcpy_s(_opis, size, i._opis);
+		_listaStudenata = new Kolekcija<Student, string>(*_listaStudenata);
+	}
+	~Ispit()
+	{
+		delete[]_opis; _opis = nullptr;
+		delete _listaStudenata; _listaStudenata = nullptr;
+	}
+	void AddStudent(Student &s,string napomena="")
+	{
+		_listaStudenata->AddElement(s, napomena);
+		for (int i = 0; i < _listaStudenata->GetTrenutno(); i++)
+		{
+			if (_listaStudenata->GetElement1(i) == s)
+			{
+				_listaStudenata->GetElement2(i) = "Ponovo pokusao pristupiti.";
+				return;
+			}
+		}
+	}
+	void Remove()
+	{
+		for (int i = 0; i < _listaStudenata->GetTrenutno(); i++)
+		{
+			if (_listaStudenata->GetElement2(i) == "Ponovo pokusao pristupiti.")
+			{
+				_listaStudenata->RemoveElement(_listaStudenata->GetElement1(i));
+			}
+		}
+	}
+	int GetIzasloLjudi()const { return _listaStudenata->GetTrenutno(); }
+	Kolekcija<Student, string> &GetStudenta()const { return *_listaStudenata; }
+	string GetPredmet()const { return _predmet; }
+	bool operator>(const Ispit&i)
+	{
+		return _predmet > i._predmet;
+	}
+	friend ostream&operator<<(ostream&cout, const Ispit&i);
+};
+ostream&operator<<(ostream&cout, const Ispit&is) {
+	cout << "Predmet: " << is._predmet << endl;
+	cout << "Opis: " << *is._opis << endl;
+	cout << *is._listaStudenata << endl;
+	return cout;
+}
+class SkolskaGodina {
+	string _skolskaGodina;//npr.2014/2015
+	vector<Ispit> _odrzaniIspiti;
+public:
+	SkolskaGodina(string skolskagodina)
+	{
+		_skolskaGodina = skolskagodina;
+	}
+	void AddIspit(Ispit &i)
+	{
+		_odrzaniIspiti.push_back(i);
+	}
+	void RemoveIspit(Ispit &is)
+	{
+		for (int i = 0; i < _odrzaniIspiti.size(); i++)
+		{
+			if (is.GetIzasloLjudi() == 0)
+			{
+				_odrzaniIspiti.erase(_odrzaniIspiti.begin() + i);
+			}
+		}
+	}
+	int GetBrojIzlazakaByPredmet(Student &s,string predmet)
+	{
+		int brojizlazaka = 0;
+		for (int i = 0; i < _odrzaniIspiti.size(); i++)
+		{
+			for (int j = 0; j < _odrzaniIspiti[i].GetStudenta().GetTrenutno(); j++)
+			{
+				if (_odrzaniIspiti[i].GetStudenta().GetElement1(j) == s && _odrzaniIspiti[i].GetPredmet() == predmet)
+					brojizlazaka++;
+			}
+		}
+		return brojizlazaka;
+	}
+	void Sort()
+	{
+		sort(_odrzaniIspiti.begin(), _odrzaniIspiti.end(), std::greater<>());
+	}
+	friend ostream&operator<<(ostream&cout, const SkolskaGodina&sk);
+};
+ostream&operator<<(ostream&cout, const SkolskaGodina&sk)
+{
+	cout << "Skolska godina: " << sk._skolskaGodina << endl;
+	cout << "Ispiti: " << endl;
+	for (int i = 0; i < sk._odrzaniIspiti.size(); i++)
+	{
+		cout << sk._odrzaniIspiti[i] << endl;
+	}
+	return cout;
+}
+int main() {
+	
+	try
+	{
+		Student s(170001, "Abedin", "Halilovic", "Abedin", "abedin1#");
+		Ispit i("PR3", "Opis");
+		i.AddStudent(s);
+		SkolskaGodina sk("2017/2018");
+		sk.AddIspit(i);
+		sk.RemoveIspit(i);
+		cout << sk << endl;
+		cout << sk.GetBrojIzlazakaByPredmet(s, "PR3") << endl;
+		thread sortiraj(&SkolskaGodina::Sort, &sk);
+		sortiraj.join();
+	}
+	catch (Izuzetak&e)
+	{
+		e.Info();
+	}
+
+	system("pause");
+	return 0;
+}

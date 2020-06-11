@@ -1,0 +1,307 @@
+#include<iostream>
+
+using namespace std;
+const char* crt = "------------------------------------------------";
+class Vrijeme
+{
+	int _sati;
+	int _minute;
+	int _sekunde;
+public:
+	Vrijeme(int sati=0, int minute=0, int sekunde = 0) {
+		_sati = sati;
+		_minute = minute;
+		_sekunde = sekunde;
+	}
+	Vrijeme(const Vrijeme &v)
+	{
+		_sati = v._sati;
+		_minute = v._minute;
+		_sekunde = v._sekunde;
+	}
+	void operator=(const Vrijeme &v)
+	{
+		_sati = v._sati;
+		_minute = v._minute;
+		_sekunde = v._sekunde;
+	}
+	friend ostream& operator <<(ostream &COUT, Vrijeme &v);
+	int GetMinute() { return _minute; }
+	int GetSate() { return _sati; }
+	void SetSate(int broj) { _sati = broj; }
+	void SetMinute(int broj) { _minute = broj; }
+	void operator+(int minute)
+	{
+		if (_minute + minute >= 60)
+		{
+			int uvecajsateza = (minute + _minute) / 60;
+			int ostajuminute = (minute + _minute) % 60;
+			_sati += uvecajsateza;
+			_minute = ostajuminute;
+			if (_sati > 24)
+				_sati = _sati - 24;
+		}
+	}
+	bool operator<(Vrijeme &v)
+	{
+		if (_sati < v._sati)
+			return true;
+		if (_sati == v._sati)
+		{
+			if (_minute < v._minute)
+				return true;
+			if (_minute == v._minute)
+			{
+				if (_sekunde < v._sekunde)
+					return true;
+			}
+		}
+		return false;
+	}
+};
+ostream&operator<<(ostream&COUT, Vrijeme &v) {
+	COUT << v._sati << "/" << v._minute << "/" << v._sekunde << endl;
+	return COUT;
+}
+class Let
+{
+	static const  int _oznakaSize = 10;
+	char _oznaka[_oznakaSize];
+	char* _odrediste;
+	int _brIzlazneKapije;
+	Vrijeme _vrijemePolijetanja; //sati i minute
+	int _trajanje; //izraženo u minutama
+	int _kasnjenje; //izraženo u minutama
+
+public:
+	Let()
+	{
+		_odrediste = nullptr;
+		_brIzlazneKapije = 0;
+		_vrijemePolijetanja = Vrijeme();
+		_trajanje = 100;
+		_kasnjenje = 10;
+	}
+	Let(const char *odrediste, int brojkapije, Vrijeme v, int trajanje, int kasnjenje, const char *oznaka)
+	{
+		int size = strlen(odrediste) + 1;
+		_odrediste = new char[size];
+		strcpy_s(_odrediste, size, odrediste);
+		_brIzlazneKapije = brojkapije;
+		_vrijemePolijetanja = v;
+		_trajanje = trajanje;
+		_kasnjenje = kasnjenje;
+		strcpy_s(_oznaka, 10, oznaka);
+	}
+	Let(const Let &l)
+	{
+		int size = strlen(l._odrediste) + 1;
+		_odrediste = new char[size];
+		strcpy_s(_odrediste, size, l._odrediste);
+		_brIzlazneKapije = l._brIzlazneKapije;
+		_vrijemePolijetanja = l._vrijemePolijetanja;
+		_trajanje = l._trajanje;
+		_kasnjenje = l._kasnjenje;
+		strcpy_s(_oznaka, 10, l._oznaka);
+	}
+	~Let()
+	{
+		delete[]_odrediste; _odrediste = nullptr;
+	}
+	friend ostream& operator<<(ostream&COUT, Let &l);
+	void operator=(const Let&l)
+	{
+		int size = strlen(l._odrediste) + 1;
+		_odrediste = new char[size];
+		strcpy_s(_odrediste, size, l._odrediste);
+		_brIzlazneKapije = l._brIzlazneKapije;
+		_vrijemePolijetanja = l._vrijemePolijetanja;
+		_trajanje = l._trajanje;
+		_kasnjenje = l._kasnjenje;
+		strcpy_s(_oznaka, 10, l._oznaka);
+	}
+	void SetKasnjenje(int kasnjenje)
+	{
+		_kasnjenje = kasnjenje;
+	}
+	bool operator!()
+	{
+		if (_kasnjenje > 0)
+			return true;
+		return false;
+	}
+	int GetTrajanje()
+	{
+		return _trajanje;
+	}
+	Let& operator+(int minute)
+	{
+		if (_vrijemePolijetanja.GetMinute() + minute >= 60)
+		{
+			int uvecajsateza = (minute + _vrijemePolijetanja.GetMinute())/60;
+			int ostajuminute = (minute + _vrijemePolijetanja.GetMinute())%60 ;
+			uvecajsateza += _vrijemePolijetanja.GetSate();
+			_vrijemePolijetanja.SetSate(uvecajsateza);
+			_vrijemePolijetanja.SetMinute(ostajuminute);
+			if (_vrijemePolijetanja.GetSate() > 24)
+			{
+				int sati = _vrijemePolijetanja.GetSate() - 24;
+				_vrijemePolijetanja.SetSate(sati);
+			}
+		}
+		return *this;
+	
+	}
+	Let&operator+=(int minute)
+	{
+		if (_vrijemePolijetanja.GetMinute() + minute >= 60)
+		{
+			int uvecajsateza = (minute + _vrijemePolijetanja.GetMinute()) / 60;
+			int ostajuminute = (minute + _vrijemePolijetanja.GetMinute()) % 60;
+			uvecajsateza += _vrijemePolijetanja.GetSate();
+			_vrijemePolijetanja.SetSate(uvecajsateza);
+			_vrijemePolijetanja.SetMinute(ostajuminute);
+			if (_vrijemePolijetanja.GetSate() > 24)
+			{
+				int sati = _vrijemePolijetanja.GetSate() - 24;
+				_vrijemePolijetanja.SetSate(sati);
+			}
+		}
+		else
+		{
+			int minnute = minute + _vrijemePolijetanja.GetMinute();
+			_vrijemePolijetanja.SetMinute(minnute);
+		}
+		return *this;
+	}
+	Vrijeme& Ocekivano()
+	{
+		_vrijemePolijetanja + _kasnjenje;
+		return _vrijemePolijetanja;
+	}
+	Vrijeme& GetOcekivano()
+	{
+		return Ocekivano();
+	}
+	void operator++()
+	{
+		_vrijemePolijetanja.SetSate(_vrijemePolijetanja.GetSate() + 1);
+		if (_vrijemePolijetanja.GetSate() == 25)
+			_vrijemePolijetanja.SetSate(1);
+	}
+	bool operator<(Let &l)
+	{
+		if (GetOcekivano() < l.GetOcekivano() == true)
+		{
+			cout << "Vrijeme sa lijeve strane je manje od onog sa desne." << endl;
+			return true;
+		}
+		return false;
+	}
+	bool operator>(Let &l)
+	{
+		if (GetOcekivano() < l.GetOcekivano() == false)
+		{
+			cout << "Vrijeme sa dense strane je manje od onog sa lijeve." << endl;
+			return true;
+		}
+		return false;
+	}
+	char *GetOznaka() { return _oznaka; }
+};
+ostream& operator<<(ostream&COUT, Let &l)
+{
+	COUT << "Oznaka leta:" << l._oznaka << endl;
+	COUT << "Odresite leta:" << l._odrediste << endl;
+	COUT << "Trajanje leta:" << l._trajanje << endl;
+	COUT << "Kasnjenje leta:" << l._kasnjenje << endl;
+	COUT << "Vrijeme polijetanja:" << l._vrijemePolijetanja << endl;
+	COUT << "Broj izlazne kapije:" << l._brIzlazneKapije << endl;
+	return COUT;
+}
+class RasporedLetova
+{
+	int _brojRegistrovanihLetova;
+	const int _maksimalanBrojLetova;
+	Let** _letovi;
+
+public:
+	RasporedLetova(int maksimalanBrojLetova) : _maksimalanBrojLetova(maksimalanBrojLetova),
+		_letovi(new Let*[_maksimalanBrojLetova]), _brojRegistrovanihLetova(0)
+	{
+
+	}
+	bool operator+=(const Let &l)
+	{
+		if (_brojRegistrovanihLetova == _maksimalanBrojLetova)
+			return false;
+		else {
+			_letovi[_brojRegistrovanihLetova] = new Let(l);
+			_brojRegistrovanihLetova++;
+			for (int i = 0; i < _brojRegistrovanihLetova - 1; i++)
+			{
+				for (int j = 1; j < _brojRegistrovanihLetova; j++)
+				{
+					if (_letovi[i] < _letovi[i + 1])
+						swap(_letovi[i], _letovi[i + 1]);
+				}
+
+			}
+		}
+	}
+	friend ostream& operator<<(ostream &COUT, const RasporedLetova&rl);
+	bool operator-=(const char*oznakaleta)
+	{
+		for (int i = 0; i < _brojRegistrovanihLetova; i++)
+		{
+			if (strcmp(_letovi[i]->GetOznaka(), oznakaleta) == 0) {
+				_letovi[i] = nullptr;
+				for (int j = 0; j < _brojRegistrovanihLetova; j++)
+				{
+					if (_letovi[i] == nullptr && _letovi[i + 1] != nullptr)
+						swap(_letovi[i], _letovi[i + 1]);
+				}
+				_brojRegistrovanihLetova--;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	   //Preklopiti operator "[]" na nacin da vraca objekat tipa Let na osnovu proslijedene pozicije u rasporedu (pozicije krecu od 1).
+
+	   /*Preklopiti operator "()" na nacin da letu sa definisanom oznakom pomjeri vrijeme polijetanja za vrijednost drugog parametra izraženog
+		u minutama. */
+
+
+		//Funkciju koja daje prosjecno trajanje svih pohranjenih letova.
+
+};
+ostream& operator<<(ostream &COUT, const RasporedLetova&rl) {
+	for (int i = 0; i < rl._brojRegistrovanihLetova; i++)
+	{
+		COUT << *rl._letovi[i] << endl;
+	}
+	return COUT;
+}
+int main()
+{
+	Vrijeme danas(12, 23, 0);
+	Vrijeme sutra(13, 24, 0);
+	Let l("Sarajevo", 2, danas, 200, 37, "FF88FF881");
+	Let l1("Mostar", 2, sutra, 200, 37, "FF88FF881");
+	l + 0;
+	l.Ocekivano();
+	cout << l.GetOcekivano() << endl;
+	++l;
+	l1 > l; 
+	RasporedLetova r(3);
+	r += l;
+	r += l1;
+	cout << r << endl;
+	r -="FF88FF881";
+	cout << r << endl;
+
+	system("pause>0");
+	return 0;
+}
